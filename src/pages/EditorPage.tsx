@@ -12,6 +12,7 @@ import { Step2Context } from '../components/proposal/steps/Step2Context';
 import { Step3Solution } from '../components/proposal/steps/Step3Solution';
 import { Step4Financial } from '../components/proposal/steps/Step4Financial';
 import { Step5Infrastructure } from '../components/proposal/steps/Step5Infrastructure';
+import { Step6Timeline } from '../components/proposal/steps/Step6Timeline';
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -82,7 +83,7 @@ function EditorContent() {
       case 5:
         return <Step5Infrastructure />;
       case 6:
-        return <div className="text-center py-12 text-slate-600">Step 6 - Em breve</div>;
+        return <Step6Timeline />;
       default:
         return <Step1Basic />;
     }
