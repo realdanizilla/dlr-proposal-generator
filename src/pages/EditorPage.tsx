@@ -8,6 +8,7 @@ import { ArrowLeft } from 'lucide-react';
 import { ProposalData } from '../types/proposal';
 import { useProposalForm } from '../contexts/ProposalFormContext';
 import { Step1Basic } from '../components/proposal/steps/Step1Basic';
+import { Step2Context } from '../components/proposal/steps/Step2Context';
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -70,7 +71,7 @@ function EditorContent() {
       case 1:
         return <Step1Basic />;
       case 2:
-        return <div className="text-center py-12 text-slate-600">Step 2 - Em breve</div>;
+        return <Step2Context />;
       case 3:
         return <div className="text-center py-12 text-slate-600">Step 3 - Em breve</div>;
       case 4:
