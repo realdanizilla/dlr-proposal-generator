@@ -9,6 +9,8 @@ import { ProposalData } from '../types/proposal';
 import { useProposalForm } from '../contexts/ProposalFormContext';
 import { Step1Basic } from '../components/proposal/steps/Step1Basic';
 import { Step2Context } from '../components/proposal/steps/Step2Context';
+import { Step3Solution } from '../components/proposal/steps/Step3Solution';
+import { Step4Financial } from '../components/proposal/steps/Step4Financial';
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -73,9 +75,9 @@ function EditorContent() {
       case 2:
         return <Step2Context />;
       case 3:
-        return <div className="text-center py-12 text-slate-600">Step 3 - Em breve</div>;
+        return <Step3Solution />;
       case 4:
-        return <div className="text-center py-12 text-slate-600">Step 4 - Em breve</div>;
+        return <Step4Financial />;
       case 5:
         return <div className="text-center py-12 text-slate-600">Step 5 - Em breve</div>;
       case 6:
