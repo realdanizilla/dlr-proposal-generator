@@ -85,7 +85,6 @@ export interface NextStep {
 }
 
 export interface ProposalData {
-  // Step 1: Básico
   basic: {
     clientName: string;
     projectTitle: string;
@@ -93,8 +92,6 @@ export interface ProposalData {
     consultancyName: string;
     consultancyEmail: string;
   };
-
-  // Step 2: Contexto
   context: {
     currentSituation: string;
     challenges: Challenge[];
@@ -104,14 +101,10 @@ export interface ProposalData {
       provenImpactBox: ProvenImpactBox;
     };
   };
-
-  // Step 3: Solução
   solution: {
     description: string;
     features: Feature[];
   };
-
-  // Step 4: Financeiro
   financial: {
     roi: {
       savings: number;
@@ -123,16 +116,12 @@ export interface ProposalData {
     recommendationBox: RecommendationBox;
     paymentMethods: PaymentMethod[];
   };
-
-  // Step 4.5: Infraestrutura
   infrastructure: {
     enabled: boolean;
     introduction?: string;
     services: InfrastructureService[];
     clientNote?: string;
   };
-
-  // Step 6: Timeline
   timeline: {
     phases: Phase[];
     nextSteps: NextStep[];
