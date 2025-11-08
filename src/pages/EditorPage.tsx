@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { ProposalFormProvider } from '../contexts/ProposalFormContext';
+import { ProposalFormProvider, useProposalForm } from '../contexts/ProposalFormContext';
 import { StepIndicator } from '../components/proposal/StepIndicator';
-import { Button } from '../components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { ProposalData } from '../types/proposal';
-import { useProposalForm } from '../contexts/ProposalFormContext';
 import { Step1Basic } from '../components/proposal/steps/Step1Basic';
 import { Step2Context } from '../components/proposal/steps/Step2Context';
 import { Step3Solution } from '../components/proposal/steps/Step3Solution';
 import { Step4Financial } from '../components/proposal/steps/Step4Financial';
 import { Step5Infrastructure } from '../components/proposal/steps/Step5Infrastructure';
 import { Step6Timeline } from '../components/proposal/steps/Step6Timeline';
+import { Button } from '../components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { ProposalData } from '../types/proposal';
 
 export function EditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +34,17 @@ export function EditorPage() {
           .single();
 
         if (error) throw error;
-        setInitialData(data.data);
+        
+        // Adicionar o ID da proposta aos dados básicos
+        const dataWithId = {
+          ...data.data,
+          basic: {
+            ...data.data.basic,
+            proposalId: data.id,
+          }
+        };
+        
+        setInitialData(dataWithId);
       } catch (error) {
         console.error('Erro ao carregar proposta:', error);
         alert('Erro ao carregar proposta');

@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { useProposalForm } from '../../../contexts/ProposalFormContext';
+import { useSaveProposal } from '../../../hooks/useSaveProposal';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -10,8 +13,6 @@ import { Select } from '../../ui/select';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { Phase, NextStep } from '../../../types/proposal';
-import { useEffect } from 'react';
-
 
 interface Step6FormData {
   phases: Phase[];
@@ -26,6 +27,9 @@ interface Step6FormData {
 
 export function Step6Timeline() {
   const { formData, updateFormData, setCurrentStep } = useProposalForm();
+  const navigate = useNavigate();
+  const { saveProposal, saving: isSaving } = useSaveProposal();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const {
     register,
@@ -35,7 +39,39 @@ export function Step6Timeline() {
     watch,
   } = useForm<Step6FormData>({
     defaultValues: {
-      phases: formData.timeline?.phases || [
+      phases: formData.timeline?.phases || [],
+      nextSteps: formData.timeline?.nextSteps || [],
+      ctaTitle: formData.timeline?.cta?.title || 'Pronto para transformar sua produção de conteúdo?',
+      ctaSubtitle: formData.timeline?.cta?.subtitle || 'Vamos marcar a próxima conversa e dar o primeiro passo rumo à automação inteligente.',
+      ctaButtonText: formData.timeline?.cta?.buttonText || 'Vamos Conversar',
+      includeSupport: formData.timeline?.sections?.support ?? true,
+      includeTraining: formData.timeline?.sections?.training ?? true,
+      includeWhyUs: formData.timeline?.sections?.whyUs ?? true,
+    },
+  });
+
+  const {
+    fields: phaseFields,
+    append: appendPhase,
+    remove: removePhase,
+  } = useFieldArray({
+    control,
+    name: 'phases',
+  });
+
+  const {
+    fields: stepFields,
+    append: appendStep,
+    remove: removeStep,
+  } = useFieldArray({
+    control,
+    name: 'nextSteps',
+  });
+
+  // Inicializar fases e passos padrão
+  useEffect(() => {
+    if (phaseFields.length === 0) {
+      const defaultPhases: Phase[] = [
         {
           name: 'Planejamento',
           duration: 1,
@@ -66,8 +102,12 @@ export function Step6Timeline() {
           durationUnit: 'week',
           description: 'Capacitação prática, entrega de documentação e handover completo',
         },
-      ],
-      nextSteps: formData.timeline?.nextSteps || [
+      ];
+      defaultPhases.forEach(phase => appendPhase(phase));
+    }
+
+    if (stepFields.length === 0) {
+      const defaultSteps: NextStep[] = [
         {
           number: 1,
           title: 'Escolher a Opção Desejada',
@@ -83,129 +123,75 @@ export function Step6Timeline() {
           title: 'Início do Projeto',
           description: 'Kickoff com a equipe, início da fase de diagnóstico e primeiras entregas.',
         },
-      ],
-      ctaTitle: formData.timeline?.cta?.title || 'Pronto para transformar sua produção de conteúdo?',
-      ctaSubtitle: formData.timeline?.cta?.subtitle || 'Vamos marcar a próxima conversa e dar o primeiro passo rumo à automação inteligente.',
-      ctaButtonText: formData.timeline?.cta?.buttonText || 'Vamos Conversar',
-      includeSupport: formData.timeline?.sections?.support ?? true,
-      includeTraining: formData.timeline?.sections?.training ?? true,
-      includeWhyUs: formData.timeline?.sections?.whyUs ?? true,
-    },
-  });
-
-  const {
-    fields: phaseFields,
-    append: appendPhase,
-    remove: removePhase,
-  } = useFieldArray({
-    control,
-    name: 'phases',
-  });
-
-  const {
-    fields: stepFields,
-    append: appendStep,
-    remove: removeStep,
-  } = useFieldArray({
-    control,
-    name: 'nextSteps',
-  });
-
-useEffect(() => {
-  // Garantir que as fases existam ao montar
-  if (phaseFields.length === 0) {
-    const defaultPhases = [
-      {
-        name: 'Planejamento',
-        duration: 1,
-        durationUnit: 'week' as const,
-        description: 'Kickoff, alinhamento de escopo, definição de metas e métricas de sucesso',
-      },
-      {
-        name: 'Mapeamento e Design',
-        duration: 1,
-        durationUnit: 'week' as const,
-        description: 'Revisão de processos, definição de fluxos as is e to be, arquitetura técnica',
-      },
-      {
-        name: 'Desenvolvimento',
-        duration: 2,
-        durationUnit: 'week' as const,
-        description: 'Criação das automações, agentes e integrações',
-      },
-      {
-        name: 'Testes e Validação',
-        duration: 2,
-        durationUnit: 'week' as const,
-        description: 'Testes pelo cliente, simulações de uso real e ajustes finos',
-      },
-      {
-        name: 'Treinamento e Entrega',
-        duration: 1,
-        durationUnit: 'week' as const,
-        description: 'Capacitação prática, entrega de documentação e handover completo',
-      },
-    ];
-    defaultPhases.forEach(phase => appendPhase(phase));
-  }
-
-  // Garantir que os próximos passos existam
-  if (stepFields.length === 0) {
-    const defaultSteps = [
-      {
-        number: 1,
-        title: 'Escolher a Opção Desejada',
-        description: 'Selecione entre MVP, Smart ou Premium conforme suas necessidades e orçamento disponível.',
-      },
-      {
-        number: 2,
-        title: 'Assinatura da Proposta e Contrato',
-        description: 'Formalização do acordo através de assinatura eletrônica, definindo escopo e prazos.',
-      },
-      {
-        number: 3,
-        title: 'Início do Projeto',
-        description: 'Kickoff com a equipe, início da fase de diagnóstico e primeiras entregas.',
-      },
-    ];
-    defaultSteps.forEach(step => appendStep(step));
-  }
-}, [phaseFields.length, stepFields.length, appendPhase, appendStep]);
-
-// Calcular prazo total
-const calculateTotalDuration = () => {
-  let totalWeeks = 0;
-  phaseFields.forEach((field, index) => {
-    const duration = Number(watch(`phases.${index}.duration`)) || 0;
-    const unit = watch(`phases.${index}.durationUnit`);
-    if (unit === 'week') {
-      totalWeeks += duration;
-    } else if (unit === 'month') {
-      totalWeeks += duration * 4;
+      ];
+      defaultSteps.forEach(step => appendStep(step));
     }
-  });
-  return totalWeeks;
-};
+  }, [phaseFields.length, stepFields.length, appendPhase, appendStep]);
 
-  const onSubmit = (data: Step6FormData) => {
-    updateFormData('timeline', {
-      phases: data.phases,
-      nextSteps: data.nextSteps,
-      cta: {
-        title: data.ctaTitle,
-        subtitle: data.ctaSubtitle,
-        buttonText: data.ctaButtonText,
-      },
-      sections: {
-        support: data.includeSupport,
-        training: data.includeTraining,
-        whyUs: data.includeWhyUs,
-      },
+  // Calcular prazo total
+  const calculateTotalDuration = () => {
+    let totalWeeks = 0;
+    phaseFields.forEach((field, index) => {
+      const duration = Number(watch(`phases.${index}.duration`)) || 0;
+      const unit = watch(`phases.${index}.durationUnit`);
+      if (unit === 'week') {
+        totalWeeks += duration;
+      } else if (unit === 'month') {
+        totalWeeks += duration * 4;
+      }
     });
+    return totalWeeks;
+  };
 
-    // Aqui vamos salvar a proposta no próximo passo
-    alert('Formulário completo! Próximo: Salvar proposta');
-    // setCurrentStep(7); // Preview ou Save
+  const onSubmit = async (data: Step6FormData) => {
+    try {
+      setSaveError(null);
+
+      // Atualizar dados do timeline no contexto
+      updateFormData('timeline', {
+        phases: data.phases,
+        nextSteps: data.nextSteps,
+        cta: {
+          title: data.ctaTitle,
+          subtitle: data.ctaSubtitle,
+          buttonText: data.ctaButtonText,
+        },
+        sections: {
+          support: data.includeSupport,
+          training: data.includeTraining,
+          whyUs: data.includeWhyUs,
+        },
+      });
+
+      // Construir objeto completo com todos os dados
+      const completeData = {
+        ...formData,
+        timeline: {
+          phases: data.phases,
+          nextSteps: data.nextSteps,
+          cta: {
+            title: data.ctaTitle,
+            subtitle: data.ctaSubtitle,
+            buttonText: data.ctaButtonText,
+          },
+          sections: {
+            support: data.includeSupport,
+            training: data.includeTraining,
+            whyUs: data.includeWhyUs,
+          },
+        },
+      };
+
+      // Salvar no banco
+      await saveProposal(completeData, formData.basic?.proposalId);
+
+      // Redirecionar para o dashboard
+      alert('✅ Proposta salva com sucesso!');
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Erro ao salvar:', error);
+      setSaveError(error.message || 'Erro ao salvar proposta. Tente novamente.');
+    }
   };
 
   const totalWeeks = calculateTotalDuration();
@@ -402,50 +388,47 @@ const calculateTotalDuration = () => {
       <Separator />
 
       {/* Call-to-Action Final */}
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
+      <Card>
         <CardContent className="pt-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-lg font-semibold text-slate-900">
             Call-to-Action Final
-            </h3>
+          </h3>
 
-            <div>
-            <Label required className="text-slate-200">Título</Label>
+          <div>
+            <Label required>Título</Label>
             <Input
-                {...register('ctaTitle', {
+              {...register('ctaTitle', {
                 required: 'Título é obrigatório',
-                })}
-                placeholder="Pronto para transformar..."
-                error={!!errors.ctaTitle}
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
+              })}
+              placeholder="Pronto para transformar..."
+              error={!!errors.ctaTitle}
             />
-            </div>
+          </div>
 
-            <div>
-            <Label required className="text-slate-200">Subtítulo</Label>
+          <div>
+            <Label required>Subtítulo</Label>
             <Textarea
-                {...register('ctaSubtitle', {
+              {...register('ctaSubtitle', {
                 required: 'Subtítulo é obrigatório',
-                })}
-                placeholder="Vamos marcar a próxima conversa..."
-                rows={2}
-                error={!!errors.ctaSubtitle}
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
+              })}
+              placeholder="Vamos marcar a próxima conversa..."
+              rows={2}
+              error={!!errors.ctaSubtitle}
             />
-            </div>
+          </div>
 
-            <div>
-            <Label required className="text-slate-200">Texto do Botão</Label>
+          <div>
+            <Label required>Texto do Botão</Label>
             <Input
-                {...register('ctaButtonText', {
+              {...register('ctaButtonText', {
                 required: 'Texto do botão é obrigatório',
-                })}
-                placeholder="Vamos Conversar"
-                error={!!errors.ctaButtonText}
-                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-400"
+              })}
+              placeholder="Vamos Conversar"
+              error={!!errors.ctaButtonText}
             />
-            </div>
+          </div>
         </CardContent>
-        </Card>
+      </Card>
 
       <Separator />
 
@@ -487,6 +470,13 @@ const calculateTotalDuration = () => {
         </CardContent>
       </Card>
 
+      {/* Error Alert */}
+      {saveError && (
+        <Alert variant="danger">
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Success Message */}
       <Alert variant="success">
         <CheckCircle className="w-4 h-4" />
@@ -502,12 +492,18 @@ const calculateTotalDuration = () => {
           type="button"
           variant="outline"
           onClick={() => setCurrentStep(5)}
+          disabled={isSaving}
         >
           ← Anterior
         </Button>
-        <Button type="submit" size="lg" className="bg-green-600 hover:bg-green-700">
+        <Button 
+          type="submit" 
+          size="lg" 
+          className="bg-green-600 hover:bg-green-700"
+          disabled={isSaving}
+        >
           <CheckCircle className="w-4 h-4 mr-2" />
-          Salvar Proposta
+          {isSaving ? 'Salvando...' : 'Salvar Proposta'}
         </Button>
       </div>
     </form>
