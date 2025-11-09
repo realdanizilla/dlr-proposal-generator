@@ -1,146 +1,242 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useProposals } from '../hooks/useProposals';
+import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Select } from '../components/ui/select';
-import { ProposalCard } from '../components/proposal/ProposalCard';
-import { Plus, Search, LogOut } from 'lucide-react';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Plus, FileText, Edit, Trash2, LogOut, Eye } from 'lucide-react';
+
+interface Proposal {
+  id: string;
+  client_name: string;
+  project_title: string;
+  status: 'draft' | 'sent' | 'approved' | 'rejected';
+  selected_tier?: string;
+  total_value?: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { proposals, loading, deleteProposal, duplicateProposal } = useProposals();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
-  const filteredProposals = proposals.filter((proposal) => {
-    const matchesSearch =
-      proposal.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proposal.project_title.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    loadUser();
+    loadProposals();
+  }, []);
 
-    const matchesStatus =
-      statusFilter === 'all' || proposal.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleCreateNew = () => {
-    navigate('/editor/new');
+  const loadUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
   };
+
+  const loadProposals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setProposals(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar propostas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta proposta?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('proposals')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProposals(proposals.filter(p => p.id !== id));
+      alert('Proposta excluída com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir proposta:', error);
+      alert('Erro ao excluir proposta');
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      draft: { label: 'Rascunho', variant: 'secondary' as const },
+      sent: { label: 'Enviada', variant: 'default' as const },
+      approved: { label: 'Aprovada', variant: 'success' as const },
+      rejected: { label: 'Rejeitada', variant: 'danger' as const },
+    };
+
+    const config = statusMap[status as keyof typeof statusMap] || statusMap.draft;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+          <p className="mt-4 text-slate-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">
-                DLR.ai - Proposal Builder
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <FileText className="w-8 h-8 text-blue-600 mr-3" />
+              <h1 className="text-2xl font-bold text-slate-900">
+                Propostas Comerciais
               </h1>
-              <p className="text-sm text-slate-600">{user?.email}</p>
             </div>
-            <Button variant="outline" onClick={signOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-slate-600">
+                {user?.email}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Title and New Button */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Actions Bar */}
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">
+            <h2 className="text-xl font-semibold text-slate-900">
               Minhas Propostas
             </h2>
             <p className="text-slate-600 mt-1">
-              {proposals.length} proposta{proposals.length !== 1 ? 's' : ''} no total
+              {proposals.length} {proposals.length === 1 ? 'proposta' : 'propostas'} no total
             </p>
           </div>
-          <Button onClick={handleCreateNew}>
+          <Button
+            onClick={() => navigate('/editor/new')}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Nova Proposta
           </Button>
         </div>
 
-        {/* Filters */}
-        <div className="flex gap-4 mb-6">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Buscar por cliente ou projeto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <Select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-48"
-          >
-            <option value="all">Todos os status</option>
-            <option value="draft">Rascunho</option>
-            <option value="sent">Enviada</option>
-            <option value="approved">Aprovada</option>
-          </Select>
-        </div>
-
-        {/* Loading */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-            <p className="mt-4 text-slate-600">Carregando propostas...</p>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!loading && proposals.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              Nenhuma proposta ainda
-            </h3>
-            <p className="text-slate-600 mb-4">
-              Comece criando sua primeira proposta
-            </p>
-            <Button onClick={handleCreateNew}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeira Proposta
-            </Button>
-          </div>
-        )}
-
         {/* Proposals Grid */}
-        {!loading && filteredProposals.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProposals.map((proposal) => (
-              <ProposalCard
-                key={proposal.id}
-                proposal={proposal}
-                onDelete={deleteProposal}
-                onDuplicate={duplicateProposal}
-              />
-            ))}
-          </div>
-        )}
+        {proposals.length === 0 ? (
+          <Card>
+            <CardContent className="pt-12 pb-12 text-center">
+              <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Nenhuma proposta encontrada
+              </h3>
+              <p className="text-slate-600 mb-6">
+                Comece criando sua primeira proposta comercial
+              </p>
+              <Button
+                onClick={() => navigate('/editor/new')}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira Proposta
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {proposals.map((proposal) => (
+              <Card key={proposal.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1">
+                        {proposal.project_title}
+                      </h3>
+                      <p className="text-sm text-slate-600 mb-2">
+                        {proposal.client_name}
+                      </p>
+                      {getStatusBadge(proposal.status)}
+                    </div>
+                  </div>
 
-        {/* No Results */}
-        {!loading && proposals.length > 0 && filteredProposals.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-slate-600">
-              Nenhuma proposta encontrada com os filtros aplicados
-            </p>
+                  {proposal.selected_tier && (
+                    <div className="mb-3">
+                      <Badge variant="outline" className="mr-2">
+                        {proposal.selected_tier}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {proposal.total_value && (
+                    <div className="mb-4">
+                      <p className="text-2xl font-bold text-slate-900">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(proposal.total_value)}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-slate-500 mb-4">
+                    <p>Criado: {new Date(proposal.created_at).toLocaleDateString('pt-BR')}</p>
+                    <p>Atualizado: {new Date(proposal.updated_at).toLocaleDateString('pt-BR')}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/preview/${proposal.id}`)}
+                      className="flex-1"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Visualizar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/editor/${proposal.id}`)}
+                      className="flex-1"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(proposal.id)}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </main>

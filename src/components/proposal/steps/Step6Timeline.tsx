@@ -20,6 +20,7 @@ interface Step6FormData {
   ctaTitle: string;
   ctaSubtitle: string;
   ctaButtonText: string;
+  ctaWhatsappLink: string;
   includeSupport: boolean;
   includeTraining: boolean;
   includeWhyUs: boolean;
@@ -44,6 +45,7 @@ export function Step6Timeline() {
       ctaTitle: formData.timeline?.cta?.title || 'Pronto para transformar sua produção de conteúdo?',
       ctaSubtitle: formData.timeline?.cta?.subtitle || 'Vamos marcar a próxima conversa e dar o primeiro passo rumo à automação inteligente.',
       ctaButtonText: formData.timeline?.cta?.buttonText || 'Vamos Conversar',
+      ctaWhatsappLink: formData.timeline?.cta?.whatsappLink || '',
       includeSupport: formData.timeline?.sections?.support ?? true,
       includeTraining: formData.timeline?.sections?.training ?? true,
       includeWhyUs: formData.timeline?.sections?.whyUs ?? true,
@@ -155,6 +157,7 @@ export function Step6Timeline() {
           title: data.ctaTitle,
           subtitle: data.ctaSubtitle,
           buttonText: data.ctaButtonText,
+          whatsappLink: data.ctaWhatsappLink,
         },
         sections: {
           support: data.includeSupport,
@@ -427,6 +430,18 @@ export function Step6Timeline() {
               error={!!errors.ctaButtonText}
             />
           </div>
+
+          <div>
+            <Label>Link do WhatsApp (opcional)</Label>
+            <Input
+              {...register('ctaWhatsappLink')}
+              placeholder="https://wa.me/5511999999999"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Formato: https://wa.me/5511999999999 (com código do país e DDD)
+            </p>
+          </div>
+
         </CardContent>
       </Card>
 

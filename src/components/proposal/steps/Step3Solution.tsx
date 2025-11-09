@@ -13,6 +13,7 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { Feature } from '../../../types/proposal';
 
 interface Step3FormData {
+  introText: string; // NOVO
   description: string;
   features: Feature[];
 }
@@ -44,9 +45,10 @@ export function Step3Solution() {
     setValue,
   } = useForm<Step3FormData>({
     defaultValues: {
+      introText: formData.solution?.introText || 'A solução proposta é um sistema automatizado e inteligente de curadoria, análise e geração de conteúdo para LinkedIn, composto por:',
       description: formData.solution?.description || '',
       features: formData.solution?.features || [],
-    },
+    }
   });
 
   const {
@@ -77,6 +79,7 @@ export function Step3Solution() {
 
   const onSubmit = (data: Step3FormData) => {
     updateFormData('solution', {
+      introText: data.introText,
       description,
       features: data.features,
     });
@@ -97,6 +100,15 @@ export function Step3Solution() {
       {/* Descrição da Solução */}
       <Card>
         <CardContent className="pt-6 space-y-4">
+              <div>
+                <Label>Texto Introdutório da Solução</Label>
+                <Textarea
+                  {...register('introText')}
+                  placeholder="A solução proposta é um sistema automatizado..."
+                  rows={2}
+                />
+              </div>
+
           <div>
             <Label required>Descrição da Solução</Label>
             <p className="text-sm text-slate-500 mb-2">

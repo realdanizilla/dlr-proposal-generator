@@ -150,3 +150,51 @@ export interface Proposal {
   created_at: string;
   updated_at: string;
 }
+
+export interface ProposalContext {
+  currentSituation?: string;
+  challenges?: Challenge[];
+  impact?: {
+    introText?: string; // NOVO
+    annualCost?: number;
+    costDescription?: string; // NOVO
+    assumptions?: Assumption[];
+    provenImpactBox?: {
+      enabled: boolean;
+      title: string;
+      mainMessage: string;
+      secondaryMessage?: string;
+      color: 'indigo-purple' | 'green' | 'blue';
+    };
+  };
+}
+
+export interface ProposalSolution {
+  introText?: string; // NOVO
+  description?: string;
+  features?: Feature[];
+}
+
+export interface ROI {
+  savings?: number;
+  gain?: number;
+  gainYear2?: number; // NOVO
+  returnMultiplier?: number;
+  paybackMonths?: number;
+}
+
+export interface ProposalTimeline {
+  phases?: Phase[];
+  nextSteps?: NextStep[];
+  cta?: {
+    title: string;
+    subtitle: string;
+    buttonText: string;
+    whatsappLink?: string; // NOVO
+  };
+  sections?: {
+    support?: boolean;
+    training?: boolean;
+    whyUs?: boolean;
+  };
+}

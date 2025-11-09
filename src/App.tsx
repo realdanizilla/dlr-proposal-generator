@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EditorPage } from './pages/EditorPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PreviewPage } from './pages/PreviewPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             }
           />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/preview/:id" element={<PreviewPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

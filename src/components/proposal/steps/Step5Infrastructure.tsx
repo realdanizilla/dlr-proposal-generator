@@ -403,18 +403,21 @@ const handleLogoUpload = async (index: number, file: File) => {
                         <Label required>Custo por Requisição (R$)</Label>
                         <Input
                           type="number"
-                          step="0.01"
+                          step="0.0001"
                           {...register(`services.${index}.costs.costPerRequest`, {
                             required: 'Custo por requisição é obrigatório',
                             min: 0,
                           })}
-                          placeholder="0.05"
+                          placeholder="0.0050"
                           onChange={(e) => {
                             register(`services.${index}.costs.costPerRequest`).onChange(e);
                             setTimeout(() => calculateMonthlyCost(index), 0);
                           }}
                           error={!!errors.services?.[index]?.costs?.costPerRequest}
                         />
+                        <p className="text-xs text-slate-500 mt-1">
+                          Aceita até 4 casas decimais para cálculos precisos
+                        </p>
                       </div>
 
                       <div>

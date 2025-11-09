@@ -15,7 +15,9 @@ import { Challenge, Assumption } from '../../../types/proposal';
 interface Step2FormData {
   currentSituation: string;
   challenges: Challenge[];
+  impactIntroText: string; // NOVO
   annualCost: number;
+  costDescription: string; // NOVO
   assumptions: Assumption[];
   provenImpactTitle: string;
   provenImpactMain: string;
@@ -40,13 +42,15 @@ export function Step2Context() {
     defaultValues: {
       currentSituation: formData.context?.currentSituation || '',
       challenges: formData.context?.challenges || [],
+      impactIntroText: formData.context?.impact?.introText || 'Se nada for feito, a tendência é a manutenção desse gargalo operacional. Com o crescimento da demanda por conteúdo e a alta competição por atenção no LinkedIn, cada hora perdida nesse processo significa menos publicações, menos alcance e menos oportunidades comerciais.',
       annualCost: formData.context?.impact?.annualCost || 0,
+      costDescription: formData.context?.impact?.costDescription || 'Considerando tempo improdutivo e oportunidades perdidas. Além do custo direto, há a perda intangível de autoridade de marca e perda na geração de leads — ativos estratégicos para o seu negócio de mentoria, consultoria e marketing digital.',
       assumptions: formData.context?.impact?.assumptions || [],
       provenImpactTitle: formData.context?.impact?.provenImpactBox?.title || 'Impacto Comprovado',
       provenImpactMain: formData.context?.impact?.provenImpactBox?.mainMessage || '',
       provenImpactSecondary: formData.context?.impact?.provenImpactBox?.secondaryMessage || '',
       provenImpactColor: formData.context?.impact?.provenImpactBox?.color || 'indigo-purple',
-    },
+    }
   });
 
   const {
@@ -68,23 +72,25 @@ export function Step2Context() {
   });
 
   const onSubmit = (data: Step2FormData) => {
-    updateFormData('context', {
-      currentSituation,
-      challenges: data.challenges,
-      impact: {
-        annualCost: data.annualCost,
-        assumptions: data.assumptions,
-        provenImpactBox: {
-          enabled: true,
-          title: data.provenImpactTitle,
-          mainMessage: data.provenImpactMain,
-          secondaryMessage: data.provenImpactSecondary,
-          color: data.provenImpactColor,
-        },
+  updateFormData('context', {
+    currentSituation,
+    challenges: data.challenges,
+    impact: {
+      introText: data.impactIntroText,
+      annualCost: data.annualCost,
+      costDescription: data.costDescription,
+      assumptions: data.assumptions,
+      provenImpactBox: {
+        enabled: true,
+        title: data.provenImpactTitle,
+        mainMessage: data.provenImpactMain,
+        secondaryMessage: data.provenImpactSecondary,
+        color: data.provenImpactColor,
       },
-    });
-    setCurrentStep(3);
-  };
+    },
+  });
+  setCurrentStep(3);
+};
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -250,6 +256,15 @@ export function Step2Context() {
           </h3>
 
           <div>
+            <Label>Texto Introdutório do Impacto</Label>
+            <Textarea
+              {...register('impactIntroText')}
+              placeholder="Se nada for feito, a tendência é..."
+              rows={3}
+            />
+          </div>
+
+          <div>
             <Label required>Custo Anual Estimado das Ineficiências</Label>
             <Input
               type="number"
@@ -259,6 +274,15 @@ export function Step2Context() {
               })}
               placeholder="99000"
               error={!!errors.annualCost}
+            />
+          </div>
+          
+          <div>
+            <Label>Descrição do Custo (aparece abaixo do valor)</Label>
+            <Textarea
+              {...register('costDescription')}
+              placeholder="Considerando tempo improdutivo e oportunidades perdidas..."
+              rows={3}
             />
           </div>
 

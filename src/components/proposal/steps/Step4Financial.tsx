@@ -7,12 +7,14 @@ import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Card, CardContent } from '../../ui/card';
 import { Separator } from '../../ui/separator';
+import { RichTextEditor } from '../../ui/rich-text-editor';
 import { Plus, Trash2, Star } from 'lucide-react';
 import { PricingTier, PaymentMethod } from '../../../types/proposal';
 
 interface Step4FormData {
   savings: number;
   gain: number;
+  gainYear2: number;
   returnMultiplier: number;
   paybackMonths: number;
   tiers: PricingTier[];
@@ -28,7 +30,7 @@ const DEFAULT_TIERS: PricingTier[] = [
     enabled: true,
     name: 'MVP',
     value: 15000,
-    description: 'Entrega funcional mínima com geração de valor imediata',
+    description: '<p>Entrega funcional mínima com geração de valor imediata</p>',
     features: [],
     isRecommended: false,
     roi: 169,
@@ -39,7 +41,7 @@ const DEFAULT_TIERS: PricingTier[] = [
     enabled: true,
     name: 'Smart',
     value: 20000,
-    description: 'Melhor relação entre valor e investimento',
+    description: '<p>Melhor relação entre valor e investimento</p>',
     features: [],
     isRecommended: true,
     roi: 170,
@@ -50,7 +52,7 @@ const DEFAULT_TIERS: PricingTier[] = [
     enabled: true,
     name: 'Premium',
     value: 30000,
-    description: 'Solução completa e automatizada',
+    description: '<p>Solução completa e automatizada</p>',
     features: [],
     isRecommended: false,
     roi: 171,
@@ -64,7 +66,7 @@ const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
     enabled: true,
     title: 'À Vista no PIX com 5% de Desconto',
     description: 'Pagamento único no PIX com desconto especial de 5% sobre o valor total do projeto.',
-    highlighted: true,
+    highlighted: false,
   },
   {
     enabled: true,
@@ -83,6 +85,7 @@ const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
 export function Step4Financial() {
   const { formData, updateFormData, setCurrentStep } = useProposalForm();
   const [initialized, setInitialized] = useState(false);
+  const [tierDescriptions, setTierDescriptions] = useState<{ [key: number]: string }>({});
 
   // Determinar valores iniciais
   const initialTiers = formData.financial?.tiers && formData.financial.tiers.length > 0
@@ -100,10 +103,12 @@ export function Step4Financial() {
     formState: { errors },
     watch,
     reset,
+    setValue,
   } = useForm<Step4FormData>({
     defaultValues: {
       savings: formData.financial?.roi?.savings || 0,
       gain: formData.financial?.roi?.gain || 0,
+      gainYear2: formData.financial?.roi?.gainYear2 || 0,
       returnMultiplier: formData.financial?.roi?.returnMultiplier || 0,
       paybackMonths: formData.financial?.roi?.paybackMonths || 0,
       tiers: initialTiers,
@@ -139,6 +144,7 @@ export function Step4Financial() {
       reset({
         savings: formData.financial?.roi?.savings || 0,
         gain: formData.financial?.roi?.gain || 0,
+        gainYear2: formData.financial?.roi?.gainYear2 || 0,
         returnMultiplier: formData.financial?.roi?.returnMultiplier || 0,
         paybackMonths: formData.financial?.roi?.paybackMonths || 0,
         tiers: initialTiers,
@@ -152,11 +158,33 @@ export function Step4Financial() {
     }
   }, [initialized, tierFields.length, reset, formData.financial, initialTiers, initialPaymentMethods]);
 
+  // Inicializar descrições dos planos quando os campos carregarem
+  useEffect(() => {
+    if (tierFields.length > 0) {
+      const descriptions: { [key: number]: string } = {};
+      tierFields.forEach((field, index) => {
+        const desc = watch(`tiers.${index}.description`);
+        if (desc && !tierDescriptions[index]) {
+          descriptions[index] = desc;
+        }
+      });
+      if (Object.keys(descriptions).length > 0) {
+        setTierDescriptions((prev) => ({ ...prev, ...descriptions }));
+      }
+    }
+  }, [tierFields, watch]);
+
+  const handleDescriptionChange = (index: number, value: string) => {
+    setTierDescriptions((prev) => ({ ...prev, [index]: value }));
+    setValue(`tiers.${index}.description`, value, { shouldDirty: true });
+  };
+
   const onSubmit = (data: Step4FormData) => {
     updateFormData('financial', {
       roi: {
         savings: data.savings,
         gain: data.gain,
+        gainYear2: data.gainYear2,
         returnMultiplier: data.returnMultiplier,
         paybackMonths: data.paybackMonths,
       },
@@ -192,56 +220,59 @@ export function Step4Financial() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label required>Economia Anual Estimada (R$)</Label>
+              <Label>Economia Anual Estimada (R$)</Label>
               <Input
                 type="number"
                 {...register('savings', {
-                  required: 'Economia anual é obrigatória',
                   min: 0,
                 })}
                 placeholder="99000"
-                error={!!errors.savings}
               />
             </div>
 
             <div>
-              <Label required>Ganho Líquido 1º Ano (R$)</Label>
+              <Label>Ganho Líquido 1º Ano (R$)</Label>
               <Input
                 type="number"
                 {...register('gain', {
-                  required: 'Ganho líquido é obrigatório',
                   min: 0,
                 })}
                 placeholder="61945"
-                error={!!errors.gain}
               />
             </div>
 
             <div>
-              <Label required>Retorno por Real Investido (x)</Label>
+              <Label>Ganho Líquido 2º Ano (R$)</Label>
+              <Input
+                type="number"
+                {...register('gainYear2', {
+                  min: 0,
+                })}
+                placeholder="123890"
+              />
+            </div>
+
+            <div>
+              <Label>Retorno por Real Investido (x)</Label>
               <Input
                 type="number"
                 step="0.01"
                 {...register('returnMultiplier', {
-                  required: 'Retorno é obrigatório',
                   min: 0,
                 })}
                 placeholder="1.67"
-                error={!!errors.returnMultiplier}
               />
             </div>
 
             <div>
-              <Label required>Payback (meses)</Label>
+              <Label>Payback (meses)</Label>
               <Input
                 type="number"
                 step="0.1"
                 {...register('paybackMonths', {
-                  required: 'Payback é obrigatório',
                   min: 0,
                 })}
                 placeholder="4"
-                error={!!errors.paybackMonths}
               />
             </div>
           </div>
@@ -266,7 +297,7 @@ export function Step4Financial() {
                   enabled: true,
                   name: '',
                   value: 0,
-                  description: '',
+                  description: '<p></p>',
                   features: [],
                   isRecommended: false,
                   roi: 0,
@@ -300,7 +331,7 @@ export function Step4Financial() {
                       className="w-4 h-4"
                     />
                     <Label className="text-lg font-semibold">
-                      Habilitar Plano {watch(`tiers.${index}.name`)}
+                      Habilitar Plano {watch(`tiers.${index}.name`) || `#${index + 1}`}
                     </Label>
                     {watch(`tiers.${index}.isRecommended`) && (
                       <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
@@ -320,38 +351,31 @@ export function Step4Financial() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label required>Nome do Plano</Label>
+                    <Label>Nome do Plano</Label>
                     <Input
-                      {...register(`tiers.${index}.name`, {
-                        required: 'Nome é obrigatório',
-                      })}
+                      {...register(`tiers.${index}.name`)}
                       placeholder="MVP"
-                      error={!!errors.tiers?.[index]?.name}
                     />
                   </div>
 
                   <div>
-                    <Label required>Valor (R$)</Label>
+                    <Label>Valor (R$)</Label>
                     <Input
                       type="number"
                       {...register(`tiers.${index}.value`, {
-                        required: 'Valor é obrigatório',
                         min: 0,
                       })}
                       placeholder="15000"
-                      error={!!errors.tiers?.[index]?.value}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label required>Descrição</Label>
-                  <Input
-                    {...register(`tiers.${index}.description`, {
-                      required: 'Descrição é obrigatória',
-                    })}
+                  <Label>Descrição (Rich Text - com bullets)</Label>
+                  <RichTextEditor
+                    value={tierDescriptions[index] || ''}
+                    onChange={(value) => handleDescriptionChange(index, value)}
                     placeholder="Entrega funcional mínima..."
-                    error={!!errors.tiers?.[index]?.description}
                   />
                 </div>
 
@@ -418,28 +442,25 @@ export function Step4Financial() {
           {watch('recommendationEnabled') && (
             <>
               <div>
-                <Label required>Plano Recomendado</Label>
+                <Label>Plano Recomendado</Label>
                 <select
                   {...register('recommendationTier')}
                   className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 >
                   {tierFields.map((field, index) => (
                     <option key={field.id} value={watch(`tiers.${index}.name`)}>
-                      {watch(`tiers.${index}.name`)}
+                      {watch(`tiers.${index}.name`) || `Plano ${index + 1}`}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <Label required>Texto da Recomendação</Label>
+                <Label>Texto da Recomendação</Label>
                 <Textarea
-                  {...register('recommendationText', {
-                    required: watch('recommendationEnabled') ? 'Texto é obrigatório' : false,
-                  })}
+                  {...register('recommendationText')}
                   placeholder="A opção Smart oferece o melhor equilíbrio..."
                   rows={3}
-                  error={!!errors.recommendationText}
                 />
               </div>
 
@@ -510,7 +531,7 @@ export function Step4Financial() {
           {paymentFields.map((field, index) => (
             <Card
               key={field.id}
-              className={watch(`paymentMethods.${index}.highlighted`) ? 'border-2 border-blue-500' : ''}
+              className="border-2 border-slate-200"
             >
               <CardContent className="pt-4 space-y-3">
                 <div className="flex items-start justify-between">
@@ -533,35 +554,20 @@ export function Step4Financial() {
                 </div>
 
                 <div>
-                  <Label required>Título</Label>
+                  <Label>Título</Label>
                   <Input
-                    {...register(`paymentMethods.${index}.title`, {
-                      required: 'Título é obrigatório',
-                    })}
+                    {...register(`paymentMethods.${index}.title`)}
                     placeholder="À Vista no PIX com 5% de Desconto"
-                    error={!!errors.paymentMethods?.[index]?.title}
                   />
                 </div>
 
                 <div>
-                  <Label required>Descrição</Label>
+                  <Label>Descrição</Label>
                   <Textarea
-                    {...register(`paymentMethods.${index}.description`, {
-                      required: 'Descrição é obrigatória',
-                    })}
+                    {...register(`paymentMethods.${index}.description`)}
                     placeholder="Pagamento único no PIX..."
                     rows={2}
-                    error={!!errors.paymentMethods?.[index]?.description}
                   />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    {...register(`paymentMethods.${index}.highlighted`)}
-                    className="w-4 h-4"
-                  />
-                  <Label>Destacar (borda azul)</Label>
                 </div>
               </CardContent>
             </Card>
