@@ -5,8 +5,7 @@ import { Button } from '../components/ui/button';
 import { ArrowLeft, Download, CreditCard, Banknote, Calendar, DollarSign, Target, Zap, BookOpen, Award, CheckCircle, TrendingUp, Clock, Users } from 'lucide-react';
 import { ProposalData } from '../types/proposal';
 import * as Icons from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import '../styles/pdf.css';
 
 export function PreviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,51 +38,51 @@ export function PreviewPage() {
     loadProposal();
   }, [id, navigate]);
 
-  const generatePDF = async () => {
-    if (!contentRef.current) return;
+    const generatePDF = async () => {
+  if (!contentRef.current) return;
 
-    try {
-      setGenerating(true);
+  try {
+    setGenerating(true);
 
-      const canvas = await html2canvas(contentRef.current, {
-        scale: 2,
+    const html2pdf = (await import('html2pdf.js')).default;
+    
+    const opt = {
+      margin: [5, 5, 5, 5],
+      filename: `Proposta_${proposal.client_name.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
+      image: { 
+        type: 'jpeg', 
+        quality: 0.98 
+      },
+      html2canvas: { 
+        scale: 1.5,
         useCORS: true,
         logging: false,
+        letterRendering: true,
+        scrollY: 0,
+        scrollX: 0,
         backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
         orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      },
+      pagebreak: { 
+        mode: ['css', 'legacy'],
+        before: '.pdf-page-break',
+        avoid: ['.pdf-no-break', 'img']
       }
+    };
 
-      const fileName = `Proposta_${proposal.client_name.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF. Tente novamente.');
-    } finally {
-      setGenerating(false);
-    }
-  };
+    await html2pdf().set(opt).from(contentRef.current).save();
+    
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error);
+    alert('Erro ao gerar PDF.');
+  } finally {
+    setGenerating(false);
+  }
+};
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -109,34 +108,6 @@ export function PreviewPage() {
     return IconComponent ? <IconComponent className="w-6 h-6" /> : <Target className="w-6 h-6" />;
   };
 
-  const getFeatureColorClasses = (color: string) => {
-    const colorMap: Record<string, string> = {
-      indigo: 'bg-indigo-50 border-indigo-200',
-      purple: 'bg-purple-50 border-purple-200',
-      violet: 'bg-violet-50 border-violet-200',
-      blue: 'bg-blue-50 border-blue-200',
-      green: 'bg-green-50 border-green-200',
-      emerald: 'bg-emerald-50 border-emerald-200',
-      teal: 'bg-teal-50 border-teal-200',
-      cyan: 'bg-cyan-50 border-cyan-200',
-    };
-    return colorMap[color] || 'bg-indigo-50 border-indigo-200';
-  };
-
-  const getIconColorClasses = (color: string) => {
-    const colorMap: Record<string, string> = {
-      indigo: 'bg-indigo-500 text-white',
-      purple: 'bg-purple-500 text-white',
-      violet: 'bg-violet-500 text-white',
-      blue: 'bg-blue-500 text-white',
-      green: 'bg-green-500 text-white',
-      emerald: 'bg-emerald-500 text-white',
-      teal: 'bg-teal-500 text-white',
-      cyan: 'bg-cyan-500 text-white',
-    };
-    return colorMap[color] || 'bg-indigo-500 text-white';
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -153,9 +124,6 @@ export function PreviewPage() {
   }
 
   const data: ProposalData = proposal.data;
-
-  // Calcular altura máxima dos planos
-  const maxPlanHeight = 'auto';
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -192,7 +160,7 @@ export function PreviewPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div ref={contentRef} className="bg-white shadow-lg">
           {/* Capa - Página 1 */}
-          <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 text-white p-16 flex flex-col justify-center">
+          <div className="pdf-cover min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 text-white p-16 flex flex-col justify-center">
             <div className="mb-12">
               <p className="text-sm uppercase tracking-wider mb-2 opacity-90">
                 {data.basic?.consultantName || 'DLR.ai'}
@@ -227,10 +195,10 @@ export function PreviewPage() {
 
           {/* Conteúdo */}
           <div className="p-16">
-            {/* Contexto e Desafios */}
+            {/* Contexto e Desafios - Página 2 */}
             {data.context && (
               <>
-                <section className="mb-16">
+                <section className="pdf-page-break pdf-no-break mb-8">
                   <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-1">
                       Contexto e Entendimento
@@ -266,7 +234,7 @@ export function PreviewPage() {
                         {data.context.challenges.map((challenge, index) => (
                           <div 
                             key={index} 
-                            className={`border-l-4 rounded-r-lg p-6 flex items-start gap-4 ${
+                            className={`border-l-4 rounded-r-lg p-6 flex items-start gap-4 avoid-break ${
                               challenge.color === 'red' ? 'bg-red-50 border-red-500' :
                               challenge.color === 'orange' ? 'bg-orange-50 border-orange-500' :
                               'bg-yellow-50 border-yellow-500'
@@ -313,7 +281,7 @@ export function PreviewPage() {
                       {/* Layout: 2 linhas, 1 coluna */}
                       <div className="space-y-6 mb-8">
                         {/* Linha 1: Custo Anual */}
-                        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-8">
+                        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-8 avoid-break">
                           <div className="flex items-start gap-4">
                             <div className="w-14 h-14 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
                               <DollarSign className="w-8 h-8 text-white" />
@@ -347,7 +315,7 @@ export function PreviewPage() {
                                 return (
                                   <div 
                                     key={index}
-                                    className={`border-2 rounded-lg p-5 ${colors[index % 3]} flex items-start gap-3`}
+                                    className={`border-2 rounded-lg p-5 ${colors[index % 3]} flex items-start gap-3 avoid-break`}
                                   >
                                     <div className={`w-12 h-12 rounded-lg ${iconColors[index % 3]} flex items-center justify-center flex-shrink-0`}>
                                       {getIconComponent(assumption.icon || 'Target')}
@@ -369,7 +337,7 @@ export function PreviewPage() {
                       </div>
 
                       {data.context.impact.provenImpactBox?.enabled && (
-                        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6">
+                        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6 avoid-break">
                           <h4 className="font-semibold text-slate-900 mb-2">
                             {data.context.impact.provenImpactBox.title}
                           </h4>
@@ -387,14 +355,14 @@ export function PreviewPage() {
                   )}
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Solução Proposta */}
+            {/* Solução Proposta - Página 3 */}
             {data.solution && (
               <>
-                <section className="mb-16 page-break">
+                <section className="pdf-page-break pdf-no-break mb-8">
                   <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-1">
                       Necessidade e Oportunidade
@@ -402,6 +370,12 @@ export function PreviewPage() {
                     <p className="text-slate-600">A solução proposta</p>
                     <div className="w-16 h-1 bg-blue-600 mt-2"></div>
                   </div>
+
+                  {data.solution.introText && (
+                    <p className="text-slate-700 leading-relaxed mb-8">
+                      {data.solution.introText}
+                    </p>
+                  )}
                   
                   {data.solution.description && (
                     <div 
@@ -412,49 +386,78 @@ export function PreviewPage() {
 
                   {data.solution.features && data.solution.features.length > 0 && (
                     <div className="grid grid-cols-2 gap-6 mt-8">
-                      {data.solution.features.map((feature, index) => (
-                        <div 
-                          key={index}
-                          className={`border-2 rounded-lg p-6 ${getFeatureColorClasses(feature.color || 'indigo')}`}
-                        >
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className={`w-10 h-10 rounded-lg ${getIconColorClasses(feature.color || 'indigo')} flex items-center justify-center flex-shrink-0`}>
-                              {getIconComponent(feature.icon || 'Target')}
+                      {data.solution.features.map((feature, index) => {
+                        const getFeatureColorClasses = (color: string) => {
+                          const colorMap: Record<string, string> = {
+                            indigo: 'bg-indigo-50 border-indigo-200',
+                            purple: 'bg-purple-50 border-purple-200',
+                            violet: 'bg-violet-50 border-violet-200',
+                            blue: 'bg-blue-50 border-blue-200',
+                            green: 'bg-green-50 border-green-200',
+                            emerald: 'bg-emerald-50 border-emerald-200',
+                            teal: 'bg-teal-50 border-teal-200',
+                            cyan: 'bg-cyan-50 border-cyan-200',
+                          };
+                          return colorMap[color] || 'bg-indigo-50 border-indigo-200';
+                        };
+
+                        const getIconColorClasses = (color: string) => {
+                          const colorMap: Record<string, string> = {
+                            indigo: 'bg-indigo-500 text-white',
+                            purple: 'bg-purple-500 text-white',
+                            violet: 'bg-violet-500 text-white',
+                            blue: 'bg-blue-500 text-white',
+                            green: 'bg-green-500 text-white',
+                            emerald: 'bg-emerald-500 text-white',
+                            teal: 'bg-teal-500 text-white',
+                            cyan: 'bg-cyan-500 text-white',
+                          };
+                          return colorMap[color] || 'bg-indigo-500 text-white';
+                        };
+
+                        return (
+                          <div 
+                            key={index}
+                            className={`border-2 rounded-lg p-6 avoid-break ${getFeatureColorClasses(feature.color || 'indigo')}`}
+                          >
+                            <div className="flex items-start gap-3 mb-4">
+                              <div className={`w-10 h-10 rounded-lg ${getIconColorClasses(feature.color || 'indigo')} flex items-center justify-center flex-shrink-0`}>
+                                {getIconComponent(feature.icon || 'Target')}
+                              </div>
+                              <h3 className="font-semibold text-slate-900 text-lg flex-1">
+                                {feature.title}
+                              </h3>
                             </div>
-                            <h3 className="font-semibold text-slate-900 text-lg flex-1">
-                              {feature.title}
-                            </h3>
+                            <p className="text-slate-700 mb-3 leading-relaxed text-sm">
+                              {feature.description}
+                            </p>
+                            {feature.tags && feature.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                {feature.tags.map((tag, tagIndex) => (
+                                  <span 
+                                    key={tagIndex}
+                                    className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-slate-700 mb-3 leading-relaxed text-sm">
-                            {feature.description}
-                          </p>
-                          {feature.tags && feature.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {feature.tags.map((tag, tagIndex) => (
-                                <span 
-                                  key={tagIndex}
-                                  className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12 page-break"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Retorno sobre Investimento */}
+            {/* Retorno sobre Investimento - Página 4 */}
             {data.financial?.roi && (
               <>
-                <section className="mb-16 page-break">
-                  <div className="mb-8">
+                <section className="pdf-page-break pdf-no-break mb-8">                  <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       Retorno sobre o Investimento
                     </h2>
@@ -462,52 +465,54 @@ export function PreviewPage() {
                     <div className="w-16 h-1 bg-blue-600 mt-2"></div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center">
-                      <div className="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mb-4">
-                        <DollarSign className="w-6 h-6" />
+                  <div className="pdf-grid-4 pdf-no-break mb-8">
+                    <div className="grid grid-cols-4 gap-4 mb-8">
+                      <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center avoid-break">
+                        <div className="w-12 h-12 rounded-lg bg-green-100 text-green-600 flex items-center justify-center mb-4">
+                          <DollarSign className="w-6 h-6" />
+                        </div>
+                        <p className="text-3xl font-bold text-slate-900 mb-2">
+                          {formatCurrency(data.financial.roi.savings || 0)}
+                        </p>
+                        <p className="text-xs text-slate-600">Economia Anual Estimada</p>
                       </div>
-                      <p className="text-3xl font-bold text-slate-900 mb-2">
-                        {formatCurrency(data.financial.roi.savings || 0)}
-                      </p>
-                      <p className="text-xs text-slate-600">Economia Anual Estimada</p>
-                    </div>
 
-                    <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center">
-                      <div className="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
-                        <TrendingUp className="w-6 h-6" />
+                      <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center avoid-break">
+                        <div className="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+                          <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <p className="text-3xl font-bold text-slate-900 mb-2">
+                          {formatCurrency(data.financial.roi.gain || 0)}
+                        </p>
+                        <p className="text-xs text-slate-600">
+                          Ganho Líquido no 1º Ano e {formatCurrency(data.financial.roi.gainYear2 || 0)} no 2º ano
+                        </p>
                       </div>
-                      <p className="text-3xl font-bold text-slate-900 mb-2">
-                        {formatCurrency(data.financial.roi.gain || 0)}
-                      </p>
-                      <p className="text-xs text-slate-600">
-                        Ganho Líquido no 1º Ano e {formatCurrency(data.financial.roi.gainYear2 || 0)} no 2º ano
-                      </p>
-                    </div>
 
-                    <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center">
-                      <div className="w-12 h-12 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-4">
-                        <Target className="w-6 h-6" />
+                      <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center avoid-break">
+                        <div className="w-12 h-12 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-4">
+                          <Target className="w-6 h-6" />
+                        </div>
+                        <p className="text-3xl font-bold text-slate-900 mb-2">
+                          {data.financial.roi.returnMultiplier}x
+                        </p>
+                        <p className="text-xs text-slate-600">Retorno por Real Investido</p>
                       </div>
-                      <p className="text-3xl font-bold text-slate-900 mb-2">
-                        {data.financial.roi.returnMultiplier}x
-                      </p>
-                      <p className="text-xs text-slate-600">Retorno por Real Investido</p>
-                    </div>
 
-                    <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center">
-                      <div className="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
-                        <Clock className="w-6 h-6" />
+                      <div className="bg-white border-2 border-slate-200 rounded-lg p-6 flex flex-col items-center text-center avoid-break">
+                        <div className="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+                          <Clock className="w-6 h-6" />
+                        </div>
+                        <p className="text-3xl font-bold text-slate-900 mb-2">
+                          {data.financial.roi.paybackMonths} meses
+                        </p>
+                        <p className="text-xs text-slate-600">Retorno do Investimento</p>
                       </div>
-                      <p className="text-3xl font-bold text-slate-900 mb-2">
-                        {data.financial.roi.paybackMonths} meses
-                      </p>
-                      <p className="text-xs text-slate-600">Retorno do Investimento</p>
                     </div>
                   </div>
 
                   {data.context?.impact?.provenImpactBox?.enabled && (
-                    <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6">
+                    <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6 avoid-break">
                       <h4 className="font-semibold text-slate-900 mb-3">
                         Impacto Comprovado
                       </h4>
@@ -523,15 +528,14 @@ export function PreviewPage() {
                   )}
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12 page-break"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Propostas de Implementação */}
+            {/* Propostas de Implementação - Página 5 */}
             {data.financial?.tiers && data.financial.tiers.filter(t => t.enabled).length > 0 && (
               <>
-                <section className="mb-16 page-break">
-                  <div className="mb-8">
+                <section className="pdf-page-break pdf-no-break mb-8">                  <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       Propostas de Implementação
                     </h2>
@@ -543,17 +547,18 @@ export function PreviewPage() {
                     Oferecemos três níveis de implementação para atender diferentes necessidades e orçamentos.
                   </p>
 
-                  <div className="grid grid-cols-3 gap-6 mb-8 items-stretch">
+                  <div className="pdf-grid-3 pdf-no-break mb-8">
                     {data.financial.tiers
                       .filter(t => t.enabled)
                       .map((tier, index) => (
                         <div 
                           key={index}
-                          className={`rounded-lg p-6 flex flex-col ${
+                          className={`pdf-no-break rounded-lg p-6 flex flex-col ${
                             tier.isRecommended 
                               ? 'bg-indigo-50 border-2 border-indigo-500' 
                               : 'bg-white border-2 border-slate-200'
                           }`}
+                          style={{ minHeight: '450px', maxHeight: '450px' }}
                         >
                           {/* Cabeçalho */}
                           <div className="mb-4">
@@ -607,7 +612,7 @@ export function PreviewPage() {
                   </div>
 
                   {data.financial.recommendationBox?.enabled && (
-                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 flex items-start gap-4">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 flex items-start gap-4 avoid-break">
                       <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Award className="w-6 h-6 text-white" />
                       </div>
@@ -623,14 +628,14 @@ export function PreviewPage() {
                   )}
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
             {/* Formas de Pagamento */}
             {data.financial?.paymentMethods && data.financial.paymentMethods.filter(p => p.enabled).length > 0 && (
               <>
-                <section className="mb-16">
+                <section className="mb-8 avoid-break">
                   <h3 className="text-xl font-semibold text-slate-900 mb-6">
                     Formas de Pagamento
                   </h3>
@@ -640,7 +645,7 @@ export function PreviewPage() {
                       .map((method, index) => (
                         <div 
                           key={index}
-                          className="p-5 rounded-lg border-2 border-slate-200 bg-white flex items-start gap-4"
+                          className="p-5 rounded-lg border-2 border-slate-200 bg-white flex items-start gap-4 avoid-break"
                         >
                           <div className="p-3 rounded-lg bg-slate-100">
                             <div className="text-slate-600">
@@ -656,15 +661,14 @@ export function PreviewPage() {
                   </div>
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Suporte e Melhorias */}
+            {/* Suporte e Melhorias - Página 6 */}
             {data.timeline?.sections?.support && (
               <>
-                <section className="mb-16 page-break">
-                  <div className="mb-8">
+                <section className="pdf-page-break pdf-no-break mb-8">                  <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       O que está Incluído no Suporte e Melhorias
                     </h2>
@@ -677,7 +681,7 @@ export function PreviewPage() {
                   </p>
 
                   <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
                         <Zap className="w-6 h-6 text-white" />
                       </div>
@@ -689,7 +693,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
+                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
                         <Award className="w-6 h-6 text-white" />
                       </div>
@@ -701,7 +705,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
                         <TrendingUp className="w-6 h-6 text-white" />
                       </div>
@@ -713,7 +717,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
+                    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
                         <Clock className="w-6 h-6 text-white" />
                       </div>
@@ -727,15 +731,14 @@ export function PreviewPage() {
                   </div>
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12 page-break"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Treinamento */}
+            {/* Treinamento - Página 7 */}
             {data.timeline?.sections?.training && (
               <>
-                <section className="mb-16 page-break">
-                  <div className="mb-8">
+                <section className="pdf-page-break pdf-no-break mb-8">                  <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       Treinamento
                     </h2>
@@ -743,7 +746,7 @@ export function PreviewPage() {
                     <div className="w-16 h-1 bg-blue-600 mt-2"></div>
                   </div>
 
-                  <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6 mb-8">
+                  <div className="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6 mb-8 avoid-break">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
                         <BookOpen className="w-6 h-6 text-white" />
@@ -767,7 +770,7 @@ export function PreviewPage() {
                   </h3>
 
                   <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
                         <Target className="w-6 h-6 text-white" />
                       </div>
@@ -779,7 +782,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
                         <Users className="w-6 h-6 text-white" />
                       </div>
@@ -791,7 +794,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
+                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
                         <BookOpen className="w-6 h-6 text-white" />
                       </div>
@@ -803,7 +806,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
+                    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
                         <Zap className="w-6 h-6 text-white" />
                       </div>
@@ -816,7 +819,7 @@ export function PreviewPage() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 border-2 border-slate-200 rounded-lg p-6">
+                  <div className="bg-slate-50 border-2 border-slate-200 rounded-lg p-6 avoid-break">
                     <h4 className="font-semibold text-slate-900 mb-3">
                       Resultado Esperado
                     </h4>
@@ -837,15 +840,14 @@ export function PreviewPage() {
                   </div>
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12 page-break"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Cronograma */}
+            {/* Cronograma - Página 8 */}
             {data.timeline && data.timeline.phases && data.timeline.phases.length > 0 && (
               <>
-                <section className="mb-16 page-break">
-                  <div className="mb-8">
+                <section className="pdf-page-break pdf-no-break mb-8">                  <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       Cronograma e Fases de Execução
                     </h2>
@@ -859,7 +861,7 @@ export function PreviewPage() {
 
                   <div className="space-y-6">
                     {data.timeline.phases.map((phase, index) => (
-                      <div key={index} className="flex gap-6 items-start">
+                      <div key={index} className="flex gap-6 items-start avoid-break">
                         <div className="flex-shrink-0">
                           <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
                             <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -888,14 +890,14 @@ export function PreviewPage() {
                   </div>
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12 page-break"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
             {/* Próximos Passos */}
             {data.timeline && data.timeline.nextSteps && data.timeline.nextSteps.length > 0 && (
               <>
-                <section className="mb-16">
+                <section className="mb-8 avoid-break">
                   <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       Próximos Passos
@@ -904,7 +906,7 @@ export function PreviewPage() {
                   </div>
                   <div className="space-y-6">
                     {data.timeline.nextSteps.map((step, index) => (
-                      <div key={index} className="flex gap-6 items-start">
+                      <div key={index} className="flex gap-6 items-start avoid-break">
                         <div className="flex-shrink-0">
                           <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
                             <span className="text-white font-bold text-2xl">{step.number}</span>
@@ -919,15 +921,14 @@ export function PreviewPage() {
                   </div>
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
-            {/* Por que a DLR */}
+            {/* Por que a DLR - Página 9 */}
             {data.timeline?.sections?.whyUs && (
               <>
-                <section className="mb-16 page-break">
-                  <div className="mb-8">
+                <section className="pdf-page-break pdf-no-break mb-8">                  <div className="mb-8">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       Por que a DLR AI Consultoria
                     </h2>
@@ -936,7 +937,7 @@ export function PreviewPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
                         <Target className="w-6 h-6 text-white" />
                       </div>
@@ -948,7 +949,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
                         <DollarSign className="w-6 h-6 text-white" />
                       </div>
@@ -960,7 +961,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
+                    <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
                         <TrendingUp className="w-6 h-6 text-white" />
                       </div>
@@ -972,7 +973,7 @@ export function PreviewPage() {
                       </p>
                     </div>
 
-                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6">
+                    <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-6 avoid-break">
                       <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
                         <Zap className="w-6 h-6 text-white" />
                       </div>
@@ -986,22 +987,33 @@ export function PreviewPage() {
                   </div>
                 </section>
 
-                <div className="border-t-2 border-slate-200 my-12"></div>
+                <div className="border-t-2 border-slate-200 my-6"></div>
               </>
             )}
 
             {/* CTA Final */}
             {data.timeline?.cta && (
-              <section className="bg-slate-50 border-2 border-slate-200 rounded-lg p-12 text-center">
+              <section className="bg-slate-50 border-2 border-slate-200 rounded-lg p-12 text-center avoid-break">
                 <h2 className="text-3xl font-bold text-slate-900 mb-4">
                   {data.timeline.cta.title}
                 </h2>
                 <p className="text-lg text-slate-600 mb-8 leading-relaxed max-w-2xl mx-auto">
                   {data.timeline.cta.subtitle}
                 </p>
-                <div className="inline-block bg-indigo-600 text-white px-10 py-4 rounded-lg font-semibold text-lg shadow-lg">
-                  {data.timeline.cta.buttonText}
-                </div>
+                {data.timeline.cta.whatsappLink ? (
+                  <a 
+                    href={data.timeline.cta.whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-indigo-600 text-white px-10 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-indigo-700 transition-colors no-underline"
+                  >
+                    {data.timeline.cta.buttonText}
+                  </a>
+                ) : (
+                  <div className="inline-block bg-indigo-600 text-white px-10 py-4 rounded-lg font-semibold text-lg shadow-lg">
+                    {data.timeline.cta.buttonText}
+                  </div>
+                )}
               </section>
             )}
           </div>

@@ -1,0 +1,74 @@
+/* Estilos específicos para geração de PDF */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Forçar quebra de página */
+  .pdf-page-break {
+    page-break-before: always !important;
+    page-break-after: auto !important;
+    break-before: page !important;
+    display: block !important;
+    min-height: 1px !important;
+  }
+
+  /* Evitar quebra dentro de elementos */
+  .pdf-no-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block !important;
+  }
+
+  /* Remover espaços extras */
+  .pdf-compact {
+    margin-bottom: 1rem !important;
+  }
+
+  /* Garantir que cards fiquem lado a lado */
+  .pdf-grid-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1rem !important;
+    page-break-inside: avoid !important;
+  }
+
+  .pdf-grid-4 {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 1rem !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Fixar altura da capa */
+  .pdf-cover {
+    height: 100vh !important;
+    page-break-after: always !important;
+  }
+}
+
+/* Para html2pdf.js */
+.pdf-page-break {
+  page-break-before: always;
+  break-before: page;
+  clear: both;
+  display: block;
+}
+
+.pdf-no-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  display: block;
+}
+
+.pdf-cover {
+  min-height: 100vh;
+  page-break-after: always;
+}

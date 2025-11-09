@@ -96,3 +96,43 @@ div[class*="prose"] ol {
 div[class*="prose"] li {
   margin-left: 0;
 }
+
+/* Regras para geração de PDF */
+@media print, screen {
+  .page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+    display: block !important;
+    clear: both !important;
+  }
+  
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+    display: block !important;
+  }
+  
+  .avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block !important;
+  }
+  
+  /* Evitar que elementos flex/grid quebrem */
+  .avoid-break * {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* Espaçamento extra antes das quebras de página */
+.page-break {
+  margin-top: 2rem;
+  padding-top: 2rem;
+}
+
+/* Garantir que cards não quebrem */
+.avoid-break {
+  display: block;
+  overflow: visible;
+}
