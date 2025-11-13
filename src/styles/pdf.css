@@ -1,5 +1,5 @@
 /* Estilos específicos para geração de PDF */
-@media print {
+@media print, screen {
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -18,6 +18,7 @@
     break-before: page !important;
     display: block !important;
     min-height: 1px !important;
+    padding-top: 40px !important;
   }
 
   /* Evitar quebra dentro de elementos */
@@ -36,8 +37,9 @@
   .pdf-grid-3 {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 1rem !important;
+    gap: 1.5rem !important;
     page-break-inside: avoid !important;
+    margin-bottom: 2rem !important;
   }
 
   .pdf-grid-4 {
@@ -45,12 +47,52 @@
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 1rem !important;
     page-break-inside: avoid !important;
+    margin-bottom: 2rem !important;
   }
 
   /* Fixar altura da capa */
   .pdf-cover {
     height: 100vh !important;
     page-break-after: always !important;
+    min-height: 1000px !important;
+  }
+
+  /* Espaçamento entre seções */
+  .pdf-section {
+    margin-bottom: 3rem !important;
+  }
+
+  /* Header de seção */
+  .pdf-section-header {
+    margin-bottom: 2rem !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Grid de 2 colunas */
+  .pdf-grid-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 2rem !important;
+  }
+
+  /* Espaçamento de parágrafos */
+  .pdf-text {
+    line-height: 1.7 !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Cards */
+  .pdf-card {
+    page-break-inside: avoid !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Separadores */
+  .pdf-divider {
+    margin: 2.5rem 0 !important;
+    border-color: #e5e7eb !important;
   }
 }
 
@@ -60,6 +102,7 @@
   break-before: page;
   clear: both;
   display: block;
+  padding-top: 40px;
 }
 
 .pdf-no-break {
@@ -71,4 +114,52 @@
 .pdf-cover {
   min-height: 100vh;
   page-break-after: always;
+}
+
+.pdf-section {
+  margin-bottom: 3rem;
+}
+
+.pdf-section-header {
+  margin-bottom: 2rem;
+  page-break-after: avoid;
+}
+
+.pdf-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  page-break-inside: avoid;
+  margin-bottom: 2rem;
+}
+
+.pdf-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  page-break-inside: avoid;
+  margin-bottom: 2rem;
+}
+
+.pdf-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  page-break-inside: avoid;
+  margin-bottom: 2rem;
+}
+
+.pdf-text {
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+.pdf-card {
+  page-break-inside: avoid;
+  margin-bottom: 1.5rem;
+}
+
+.pdf-divider {
+  margin: 2.5rem 0;
+  border-color: #e5e7eb;
 }

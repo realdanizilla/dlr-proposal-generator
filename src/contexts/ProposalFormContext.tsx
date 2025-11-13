@@ -18,7 +18,7 @@ const getDefaultFormData = (): Partial<ProposalData> => ({
     projectTitle: '',
     projectType: '',
     consultancyName: 'DLR.ai',
-    consultancyEmail: 'danizilla@gmail.com',
+    consultancyEmail: 'daniel.ribeiro@dlrassessoria.com.br',
   },
   context: {
     currentSituation: '',
