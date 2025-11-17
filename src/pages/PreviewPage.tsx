@@ -653,6 +653,181 @@ export function PreviewPage() {
               </>
             )}
 
+            {/* Custos de Infraestrutura e APIs */}
+            {data.infrastructure?.enabled && data.infrastructure.services && data.infrastructure.services.length > 0 && (
+              <>
+                <section className="pdf-page-break pdf-section">
+                  <div className="pdf-section-header">
+                    <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                      Custos de Infraestrutura e APIs
+                    </h2>
+                    <p className="text-slate-600 text-base">Serviços de terceiros necessários para operação</p>
+                    <div className="w-16 h-1 bg-blue-600 mt-3"></div>
+                  </div>
+
+                  {data.infrastructure.introduction && (
+                    <p className="pdf-text text-slate-700">
+                      {data.infrastructure.introduction}
+                    </p>
+                  )}
+
+                  {/* Grid de Serviços */}
+                  <div className="space-y-4">
+                    {data.infrastructure.services.map((service, index) => (
+                      <div 
+                        key={index}
+                        className="pdf-card bg-white border-2 border-slate-200 rounded-lg overflow-hidden"
+                      >
+                        {/* Header do Card */}
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b-2 border-slate-200 p-4">
+                          <div className="flex items-center gap-4">
+                            {/* Logo */}
+                            {service.logo?.value && (
+                              <div className="w-16 h-16 bg-white rounded-lg border-2 border-slate-200 flex items-center justify-center p-2 flex-shrink-0">
+                                <img
+                                  src={service.logo.value}
+                                  alt={service.name}
+                                  className="max-w-full max-h-full object-contain"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Nome e Modelo */}
+                            <div className="flex-1">
+                              <h3 className="text-lg font-bold text-slate-900 mb-1">
+                                {service.name}
+                              </h3>
+                              {service.model && (
+                                <p className="text-sm text-slate-600">
+                                  {service.model}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Custo Mensal - Destaque */}
+                            <div className="text-right bg-white rounded-lg border-2 border-indigo-200 px-4 py-2">
+                              <p className="text-xs text-slate-600 mb-1">Custo Mensal</p>
+                              <p className="text-2xl font-bold text-indigo-600">
+                                {formatCurrency(service.costs.monthlyCost)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Body do Card - Métricas */}
+                        <div className="p-4">
+                          <div className="grid grid-cols-3 gap-4 mb-3">
+                            {/* Requisições por Dia */}
+                            <div className="text-center bg-blue-50 rounded-lg p-3 border border-blue-200">
+                              <div className="flex items-center justify-center mb-2">
+                                <Calendar className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <p className="text-2xl font-bold text-blue-600 mb-1">
+                                {service.volume.requestsPerDay.toLocaleString('pt-BR')}
+                              </p>
+                              <p className="text-xs text-slate-600">Requisições/Dia</p>
+                            </div>
+
+                            {/* Requisições por Mês */}
+                            <div className="text-center bg-purple-50 rounded-lg p-3 border border-purple-200">
+                              <div className="flex items-center justify-center mb-2">
+                                <TrendingUp className="w-5 h-5 text-purple-600" />
+                              </div>
+                              <p className="text-2xl font-bold text-purple-600 mb-1">
+                                {service.volume.requestsPerMonth.toLocaleString('pt-BR')}
+                              </p>
+                              <p className="text-xs text-slate-600">Requisições/Mês</p>
+                            </div>
+
+                            {/* Custo por Requisição */}
+                            <div className="text-center bg-green-50 rounded-lg p-3 border border-green-200">
+                              <div className="flex items-center justify-center mb-2">
+                                <DollarSign className="w-5 h-5 text-green-600" />
+                              </div>
+                              <p className="text-2xl font-bold text-green-600 mb-1">
+                                {new Intl.NumberFormat('pt-BR', {
+                                  style: 'currency',
+                                  currency: 'BRL',
+                                  minimumFractionDigits: 4,
+                                  maximumFractionDigits: 4,
+                                }).format(service.costs.costPerRequest)}
+                              </p>
+                              <p className="text-xs text-slate-600">Custo/Requisição</p>
+                            </div>
+                          </div>
+
+                          {/* Descrição/Observação */}
+                          {service.description && (
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                {service.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Resumo Total */}
+                  <div className="pdf-card bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg p-6 mt-6">
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                          <DollarSign className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <p className="text-sm opacity-90 mb-1">Custo Total de Infraestrutura</p>
+                          <h3 className="text-3xl font-bold">
+                            {formatCurrency(
+                              data.infrastructure.services.reduce(
+                                (sum, service) => sum + (service.costs.monthlyCost || 0),
+                                0
+                              )
+                            )}
+                            <span className="text-lg font-normal opacity-90">/mês</span>
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm opacity-90 mb-1">Custo Anual</p>
+                        <p className="text-2xl font-bold">
+                          {formatCurrency(
+                            data.infrastructure.services.reduce(
+                              (sum, service) => sum + (service.costs.monthlyCost || 0),
+                              0
+                            ) * 12
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nota para o Cliente */}
+                  {data.infrastructure.clientNote && (
+                    <div className="pdf-card bg-amber-50 border-2 border-amber-200 rounded-lg p-5 flex items-start gap-4 mt-6">
+                      <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-900 text-base mb-2">
+                          📌 Importante
+                        </h4>
+                        <p className="text-slate-700 text-sm leading-relaxed">
+                          {data.infrastructure.clientNote}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+
             {/* Suporte e Melhorias */}
             {data.timeline?.sections?.support && (
               <>
@@ -661,12 +836,12 @@ export function PreviewPage() {
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
                       O que está Incluído no Suporte e Melhorias
                     </h2>
-                    <p className="text-slate-600 text-base">Detalhamento do suporte contínuo</p>
+                    <p className="text-slate-600 text-base">Detalhamento do suporte</p>
                     <div className="w-16 h-1 bg-blue-600 mt-3"></div>
                   </div>
 
                   <p className="pdf-text text-slate-700">
-                    Oferecemos um pacote completo de suporte e melhorias contínuas:
+                    O suporte tem duração de 6 meses após a implantação, sendo 3 meses para estabilização e 3 meses para melhorias. Abaixo o detalhamento do que está incluído no período de melhorias:
                   </p>
 
                   <div className="pdf-grid-2">
@@ -678,7 +853,7 @@ export function PreviewPage() {
                         Pequenas Alterações
                       </h3>
                       <p className="text-slate-700 text-sm leading-relaxed">
-                        Até 2 mini features por mês, incluindo ajustes de textos e prompts, troca de imagens pré-aprovadas, correção de links quebrados e pequenas correções.
+                        Até 2 mini features por mês (total de 6), incluindo ajustes de textos e prompts, troca de imagens pré-aprovadas, correção de links quebrados e pequenas correções.
                       </p>
                     </div>
 
@@ -690,7 +865,7 @@ export function PreviewPage() {
                         Melhorias e Features
                       </h3>
                       <p className="text-slate-700 text-sm leading-relaxed">
-                        Até 1 melhoria (feature) por mês, desde que não seja muito complexa. Evoluções incrementais para otimizar o sistema.
+                        Até 1 melhoria (feature) por mês (total de 3), desde que não seja muito complexa. Evoluções incrementais para otimizar o sistema.
                       </p>
                     </div>
 
@@ -702,7 +877,7 @@ export function PreviewPage() {
                         Monitoramento Básico
                       </h3>
                       <p className="text-slate-700 text-sm leading-relaxed">
-                        Acompanhamento do funcionamento das automações para garantir que tudo está operando conforme esperado.
+                        Acompanhamento das automações para garantir que tudo está operando conforme esperado.
                       </p>
                     </div>
 
@@ -763,10 +938,10 @@ export function PreviewPage() {
                         <Target className="w-6 h-6 text-white" />
                       </div>
                       <h4 className="font-semibold text-slate-900 text-base mb-2">
-                        Treinamento Focado
+                        Treinamento Prático
                       </h4>
                       <p className="text-slate-700 text-sm leading-relaxed">
-                        Capacitação exclusiva nas soluções implantadas, com base em casos e fluxos reais do seu negócio. Nada de teoria genérica.
+                        Capacitação para usar a solução em situações reais do seu negócio. Nada de teoria genérica.
                       </p>
                     </div>
 
@@ -775,10 +950,10 @@ export function PreviewPage() {
                         <Users className="w-6 h-6 text-white" />
                       </div>
                       <h4 className="font-semibold text-slate-900 text-base mb-2">
-                        Capacitação Prática
+                        Conteúdo Técnico
                       </h4>
                       <p className="text-slate-700 text-sm leading-relaxed">
-                        Conteúdo hands-on. Exemplos: "como alterar o prompt do agente", "como alterar os critérios de score".
+                        Para pequenas alterações e manutenções. Exemplos: "como alterar o prompt do agente", "como alterar uma imagem".
                       </p>
                     </div>
 
@@ -802,7 +977,7 @@ export function PreviewPage() {
                         Sessões de Handover
                       </h4>
                       <p className="text-slate-700 text-sm leading-relaxed">
-                        Transferência formal de conhecimento da operação para o cliente, com período de acompanhamento de 30 dias.
+                        Transferência formal de conhecimento para o cliente.
                       </p>
                     </div>
                   </div>
@@ -846,6 +1021,49 @@ export function PreviewPage() {
                     Nossa metodologia comprovada garante entrega rápida e com mínima interrupção nas suas operações. O projeto é dividido em fases claras com entregas definidas.
                   </p>
 
+                  {/* Prazo Total Estimado */}
+                  {(() => {
+                    let totalWeeks = 0;
+                    data.timeline.phases.forEach((phase) => {
+                      const duration = Number(phase.duration) || 0;
+                      const unit = phase.durationUnit;
+                      if (unit === 'week') {
+                        totalWeeks += duration;
+                      } else if (unit === 'month') {
+                        totalWeeks += duration * 4;
+                      }
+                    });
+                    const totalMonths = Math.round(totalWeeks / 4);
+
+                    return (
+                      <div className="pdf-card bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg p-6 mb-6 flex items-center gap-6">
+                        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Clock className="w-9 h-9 text-white" />
+                        </div>
+                        <div className="flex-1 text-white">
+                          <p className="text-sm opacity-90 mb-2">Prazo Total Estimado</p>
+                          <div className="flex items-baseline gap-3">
+                            <p className="text-4xl font-bold">
+                              {totalWeeks}
+                            </p>
+                            <p className="text-xl font-medium opacity-90">
+                              {totalWeeks === 1 ? 'semana' : 'semanas'}
+                            </p>
+                            {totalWeeks >= 4 && (
+                              <>
+                                <span className="text-2xl opacity-60">•</span>
+                                <p className="text-2xl font-semibold">
+                                  {totalMonths} {totalMonths === 1 ? 'mês' : 'meses'}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Fases */}
                   <div className="space-y-5">
                     {data.timeline.phases.map((phase, index) => (
                       <div key={index} className="pdf-card flex gap-5 items-start">
