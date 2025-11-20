@@ -8,7 +8,7 @@ import { Textarea } from '../../ui/textarea';
 import { Card, CardContent } from '../../ui/card';
 import { Separator } from '../../ui/separator';
 import { Alert, AlertDescription } from '../../ui/alert';
-import { Plus, Trash2, Upload, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Upload, DollarSign, ChevronUp, ChevronDown } from 'lucide-react';
 import { InfrastructureService } from '../../../types/proposal';
 import { supabase } from '../../../lib/supabase';
 
@@ -43,6 +43,7 @@ export function Step5Infrastructure() {
     fields: serviceFields,
     append: appendService,
     remove: removeService,
+    move: moveService,
   } = useFieldArray({
     control,
     name: 'services',
@@ -72,44 +73,96 @@ export function Step5Infrastructure() {
     }, 0);
   };
 
-// Upload de logo
-const handleLogoUpload = async (index: number, file: File) => {
-  try {
-    setUploadingLogo(index);
-
-    // Verificar tamanho do arquivo (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Arquivo muito grande. Máximo 5MB.');
-      setUploadingLogo(null);
-      return;
+  // Funções de reordenação
+  const moveServiceUp = (index: number) => {
+    if (index > 0) {
+      moveService(index, index - 1);
     }
+  };
 
-    // Verificar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      alert('Apenas imagens são permitidas.');
-      setUploadingLogo(null);
-      return;
+  const moveServiceDown = (index: number) => {
+    if (index < serviceFields.length - 1) {
+      moveService(index, index + 1);
     }
+  };
 
-    console.log('Iniciando upload...', { fileName: file.name, size: file.size });
+  // Upload de logo
+  const handleLogoUpload = async (index: number, file: File) => {
+    try {
+      setUploadingLogo(index);
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `logos/${fileName}`;
+      // Verificar tamanho do arquivo (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Arquivo muito grande. Máximo 5MB.');
+        setUploadingLogo(null);
+        return;
+      }
 
-    // Tentar upload no Supabase
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('proposal-logos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
+      // Verificar tipo de arquivo
+      if (!file.type.startsWith('image/')) {
+        alert('Apenas imagens são permitidas.');
+        setUploadingLogo(null);
+        return;
+      }
+
+      console.log('Iniciando upload...', { fileName: file.name, size: file.size });
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      // Tentar upload no Supabase
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('proposal-logos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Erro no upload Supabase:', uploadError);
+        
+        // Fallback: usar base64
+        console.log('Usando base64 como fallback...');
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          setValue(`services.${index}.logo`, {
+            type: 'url',
+            value: base64String,
+          });
+          setUploadingLogo(null);
+          alert('Upload no Supabase falhou. Usando imagem local (base64). Funcionará, mas não será salva no servidor.');
+        };
+        reader.onerror = () => {
+          alert('Erro ao processar imagem');
+          setUploadingLogo(null);
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      console.log('Upload bem-sucedido:', uploadData);
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('proposal-logos')
+        .getPublicUrl(filePath);
+
+      console.log('URL pública:', publicUrl);
+
+      setValue(`services.${index}.logo`, {
+        type: 'upload',
+        value: publicUrl,
       });
 
-    if (uploadError) {
-      console.error('Erro no upload Supabase:', uploadError);
+      setUploadingLogo(null);
+      alert('Logo enviado com sucesso!');
+
+    } catch (error: any) {
+      console.error('Erro geral no upload:', error);
       
-      // Fallback: usar base64
-      console.log('Usando base64 como fallback...');
+      // Fallback final: base64
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
@@ -118,54 +171,15 @@ const handleLogoUpload = async (index: number, file: File) => {
           value: base64String,
         });
         setUploadingLogo(null);
-        alert('Upload no Supabase falhou. Usando imagem local (base64). Funcionará, mas não será salva no servidor.');
+        alert('Upload falhou. Usando imagem local. Cole uma URL para persistir a imagem.');
       };
       reader.onerror = () => {
         alert('Erro ao processar imagem');
         setUploadingLogo(null);
       };
       reader.readAsDataURL(file);
-      return;
     }
-
-    console.log('Upload bem-sucedido:', uploadData);
-
-    // Obter URL pública
-    const { data: { publicUrl } } = supabase.storage
-      .from('proposal-logos')
-      .getPublicUrl(filePath);
-
-    console.log('URL pública:', publicUrl);
-
-    setValue(`services.${index}.logo`, {
-      type: 'upload',
-      value: publicUrl,
-    });
-
-    setUploadingLogo(null);
-    alert('Logo enviado com sucesso!');
-
-  } catch (error: any) {
-    console.error('Erro geral no upload:', error);
-    
-    // Fallback final: base64
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setValue(`services.${index}.logo`, {
-        type: 'url',
-        value: base64String,
-      });
-      setUploadingLogo(null);
-      alert('Upload falhou. Usando imagem local. Cole uma URL para persistir a imagem.');
-    };
-    reader.onerror = () => {
-      alert('Erro ao processar imagem');
-      setUploadingLogo(null);
-    };
-    reader.readAsDataURL(file);
-  }
-};
+  };
 
   const onSubmit = (data: Step5FormData) => {
     updateFormData('infrastructure', {
@@ -259,187 +273,219 @@ const handleLogoUpload = async (index: number, file: File) => {
               {serviceFields.map((field, index) => (
                 <Card key={field.id} className="border-2">
                   <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-md font-semibold">Serviço #{index + 1}</h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeService(index)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <h4 className="text-md font-semibold">Serviço #{index + 1}</h4>
+                        </div>
 
-                    <div>
-                      <Label required>Nome do Serviço</Label>
-                      <Input
-                        {...register(`services.${index}.name`, {
-                          required: 'Nome é obrigatório',
-                        })}
-                        placeholder="OpenAI API"
-                        error={!!errors.services?.[index]?.name}
-                      />
-                    </div>
-
-                    {/* Logo Upload */}
-                    <div>
-                    <Label>Logo do Serviço</Label>
-                    <div className="space-y-2">
-                        <div className="flex gap-2">
-                        <Input
-                            type="text"
-                            placeholder="Cole a URL da imagem"
-                            defaultValue={watch(`services.${index}.logo`)?.type === 'url' ? watch(`services.${index}.logo`)?.value : ''}
-                            onChange={(e) => {
-                            if (e.target.value) {
-                                setValue(`services.${index}.logo`, {
-                                type: 'url',
-                                value: e.target.value,
-                                });
-                            }
-                            }}
-                        />
-                        <span className="text-slate-500 py-2">ou</span>
                         <div>
-                            <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            id={`logo-upload-${index}`}
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                handleLogoUpload(index, file);
-                                }
-                            }}
-                            />
-                            <Button
-                            type="button"
-                            variant="outline"
-                            disabled={uploadingLogo === index}
-                            onClick={() => document.getElementById(`logo-upload-${index}`)?.click()}
-                            >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingLogo === index ? 'Enviando...' : 'Upload'}
-                            </Button>
-                        </div>
+                          <Label required>Nome do Serviço</Label>
+                          <Input
+                            {...register(`services.${index}.name`, {
+                              required: 'Nome é obrigatório',
+                            })}
+                            placeholder="OpenAI API"
+                            error={!!errors.services?.[index]?.name}
+                          />
                         </div>
 
-                        {watch(`services.${index}.logo`)?.value && (
-                        <div className="mt-2">
-                            <p className="text-sm text-slate-500 mb-2">Preview:</p>
-                            <div className="flex items-center gap-2">
-                            <img
-                                src={watch(`services.${index}.logo`)?.value}
-                                alt="Logo preview"
-                                className="w-20 h-20 object-contain border rounded p-2 bg-white"
-                                onError={(e) => {
-                                e.currentTarget.src = 'https://via.placeholder.com/80?text=Erro';
+                        {/* Logo Upload */}
+                        <div>
+                          <Label>Logo do Serviço</Label>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="Cole a URL da imagem"
+                                defaultValue={watch(`services.${index}.logo`)?.type === 'url' ? watch(`services.${index}.logo`)?.value : ''}
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    setValue(`services.${index}.logo`, {
+                                      type: 'url',
+                                      value: e.target.value,
+                                    });
+                                  }
                                 }}
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setValue(`services.${index}.logo`, undefined)}
-                            >
-                                <Trash2 className="w-4 h-4 text-red-600" />
-                            </Button>
+                              />
+                              <span className="text-slate-500 py-2">ou</span>
+                              <div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  id={`logo-upload-${index}`}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleLogoUpload(index, file);
+                                    }
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  disabled={uploadingLogo === index}
+                                  onClick={() => document.getElementById(`logo-upload-${index}`)?.click()}
+                                >
+                                  <Upload className="w-4 h-4 mr-2" />
+                                  {uploadingLogo === index ? 'Enviando...' : 'Upload'}
+                                </Button>
+                              </div>
                             </div>
+
+                            {watch(`services.${index}.logo`)?.value && (
+                              <div className="mt-2">
+                                <p className="text-sm text-slate-500 mb-2">Preview:</p>
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={watch(`services.${index}.logo`)?.value}
+                                    alt="Logo preview"
+                                    className="w-20 h-20 object-contain border rounded p-2 bg-white"
+                                    onError={(e) => {
+                                      e.currentTarget.src = 'https://via.placeholder.com/80?text=Erro';
+                                    }}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setValue(`services.${index}.logo`, undefined)}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        )}
-                    </div>
-                    </div>
 
-                    <div>
-                      <Label>Modelo/Serviço</Label>
-                      <Input
-                        {...register(`services.${index}.model`)}
-                        placeholder="GPT-4"
-                      />
-                    </div>
+                        <div>
+                          <Label>Modelo/Serviço</Label>
+                          <Input
+                            {...register(`services.${index}.model`)}
+                            placeholder="GPT-4"
+                          />
+                        </div>
 
-                    <Separator />
+                        <Separator />
 
-                    <h5 className="text-sm font-semibold text-slate-900">Volume Estimado</h5>
+                        <h5 className="text-sm font-semibold text-slate-900">Volume Estimado</h5>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label required>Requisições por Dia</Label>
-                        <Input
-                          type="number"
-                          {...register(`services.${index}.volume.requestsPerDay`, {
-                            required: 'Requisições por dia é obrigatório',
-                            min: 0,
-                          })}
-                          placeholder="500"
-                          onChange={(e) => {
-                            register(`services.${index}.volume.requestsPerDay`).onChange(e);
-                            setTimeout(() => calculateMonthlyRequests(index), 0);
-                          }}
-                          error={!!errors.services?.[index]?.volume?.requestsPerDay}
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label required>Requisições por Dia</Label>
+                            <Input
+                              type="number"
+                              {...register(`services.${index}.volume.requestsPerDay`, {
+                                required: 'Requisições por dia é obrigatório',
+                                min: 0,
+                              })}
+                              placeholder="500"
+                              onChange={(e) => {
+                                register(`services.${index}.volume.requestsPerDay`).onChange(e);
+                                setTimeout(() => calculateMonthlyRequests(index), 0);
+                              }}
+                              error={!!errors.services?.[index]?.volume?.requestsPerDay}
+                            />
+                          </div>
+
+                          <div>
+                            <Label>Requisições por Mês (auto)</Label>
+                            <Input
+                              type="number"
+                              {...register(`services.${index}.volume.requestsPerMonth`)}
+                              placeholder="15000"
+                              disabled
+                              className="bg-slate-100"
+                            />
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <h5 className="text-sm font-semibold text-slate-900">Custos</h5>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label required>Custo por Requisição (R$)</Label>
+                            <Input
+                              type="number"
+                              step="0.0001"
+                              {...register(`services.${index}.costs.costPerRequest`, {
+                                required: 'Custo por requisição é obrigatório',
+                                min: 0,
+                              })}
+                              placeholder="0.0050"
+                              onChange={(e) => {
+                                register(`services.${index}.costs.costPerRequest`).onChange(e);
+                                setTimeout(() => calculateMonthlyCost(index), 0);
+                              }}
+                              error={!!errors.services?.[index]?.costs?.costPerRequest}
+                            />
+                            <p className="text-xs text-slate-500 mt-1">
+                              Aceita até 4 casas decimais para cálculos precisos
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label>Custo Mensal (R$) (auto)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...register(`services.${index}.costs.monthlyCost`)}
+                              placeholder="750.00"
+                              disabled
+                              className="bg-slate-100"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Descrição/Observação (opcional)</Label>
+                          <Textarea
+                            {...register(`services.${index}.description`)}
+                            placeholder="Usado para geração de conteúdo..."
+                            rows={2}
+                          />
+                        </div>
                       </div>
 
-                      <div>
-                        <Label>Requisições por Mês (auto)</Label>
-                        <Input
-                          type="number"
-                          {...register(`services.${index}.volume.requestsPerMonth`)}
-                          placeholder="15000"
-                          disabled
-                          className="bg-slate-100"
-                        />
+                      {/* Botões de controle */}
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => moveServiceUp(index)}
+                          disabled={index === 0}
+                          className={index === 0 ? 'opacity-30 cursor-not-allowed' : ''}
+                          title="Mover para cima"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => moveServiceDown(index)}
+                          disabled={index === serviceFields.length - 1}
+                          className={index === serviceFields.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}
+                          title="Mover para baixo"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeService(index)}
+                          className="mt-2"
+                          title="Remover serviço"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
                       </div>
-                    </div>
-
-                    <Separator />
-
-                    <h5 className="text-sm font-semibold text-slate-900">Custos</h5>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label required>Custo por Requisição (R$)</Label>
-                        <Input
-                          type="number"
-                          step="0.0001"
-                          {...register(`services.${index}.costs.costPerRequest`, {
-                            required: 'Custo por requisição é obrigatório',
-                            min: 0,
-                          })}
-                          placeholder="0.0050"
-                          onChange={(e) => {
-                            register(`services.${index}.costs.costPerRequest`).onChange(e);
-                            setTimeout(() => calculateMonthlyCost(index), 0);
-                          }}
-                          error={!!errors.services?.[index]?.costs?.costPerRequest}
-                        />
-                        <p className="text-xs text-slate-500 mt-1">
-                          Aceita até 4 casas decimais para cálculos precisos
-                        </p>
-                      </div>
-
-                      <div>
-                        <Label>Custo Mensal (R$) (auto)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          {...register(`services.${index}.costs.monthlyCost`)}
-                          placeholder="750.00"
-                          disabled
-                          className="bg-slate-100"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Descrição/Observação (opcional)</Label>
-                      <Textarea
-                        {...register(`services.${index}.description`)}
-                        placeholder="Usado para geração de conteúdo..."
-                        rows={2}
-                      />
                     </div>
                   </CardContent>
                 </Card>

@@ -12,8 +12,25 @@ import { Separator } from '../../ui/separator';
 import { Select } from '../../ui/select';
 import { Alert, AlertDescription } from '../../ui/alert';
 import { RichTextEditor } from '../../ui/rich-text-editor';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { Phase, NextStep, SupportTier } from '../../../types/proposal';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Step6FormData {
   // Support
@@ -123,6 +140,7 @@ export function Step6Timeline() {
     fields: phaseFields,
     append: appendPhase,
     remove: removePhase,
+    move: movePhase,
   } = useFieldArray({
     control,
     name: 'phases',
@@ -132,6 +150,7 @@ export function Step6Timeline() {
     fields: stepFields,
     append: appendStep,
     remove: removeStep,
+    move: moveStep,
   } = useFieldArray({
     control,
     name: 'nextSteps',
@@ -241,6 +260,32 @@ export function Step6Timeline() {
   const handleSupportDescriptionChange = (index: number, value: string) => {
     setSupportTierDescriptions((prev) => ({ ...prev, [index]: value }));
     setValue(`supportTiers.${index}.description`, value, { shouldDirty: true });
+  };
+
+  // Funções de reordenação para Fases
+  const movePhaseUp = (index: number) => {
+    if (index > 0) {
+      movePhase(index, index - 1);
+    }
+  };
+
+  const movePhaseDown = (index: number) => {
+    if (index < phaseFields.length - 1) {
+      movePhase(index, index + 1);
+    }
+  };
+
+  // Funções de reordenação para Próximos Passos
+  const moveStepUp = (index: number) => {
+    if (index > 0) {
+      moveStep(index, index - 1);
+    }
+  };
+
+  const moveStepDown = (index: number) => {
+    if (index < stepFields.length - 1) {
+      moveStep(index, index + 1);
+    }
   };
 
   // Calcular prazo total
@@ -600,64 +645,96 @@ export function Step6Timeline() {
           {phaseFields.map((field, index) => (
             <Card key={field.id} className="border-l-4 border-l-blue-500">
               <CardContent className="pt-4 space-y-3">
-                <div className="flex items-start justify-between">
-                  <h4 className="text-md font-semibold">Fase #{index + 1}</h4>
-                  {phaseFields.length > 1 && (
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <h4 className="text-md font-semibold">Fase #{index + 1}</h4>
+                    </div>
+
+                    <div>
+                      <Label required>Nome da Fase</Label>
+                      <Input
+                        {...register(`phases.${index}.name`, {
+                          required: 'Nome é obrigatório',
+                        })}
+                        placeholder="Planejamento"
+                        error={!!errors.phases?.[index]?.name}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label required>Duração</Label>
+                        <Input
+                          type="number"
+                          {...register(`phases.${index}.duration`, {
+                            required: 'Duração é obrigatória',
+                            min: 1,
+                          })}
+                          placeholder="1"
+                          error={!!errors.phases?.[index]?.duration}
+                        />
+                      </div>
+
+                      <div>
+                        <Label required>Unidade</Label>
+                        <Select {...register(`phases.${index}.durationUnit`)}>
+                          <option value="week">Semana(s)</option>
+                          <option value="month">Mês(es)</option>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label required>Descrição</Label>
+                      <Textarea
+                        {...register(`phases.${index}.description`, {
+                          required: 'Descrição é obrigatória',
+                        })}
+                        placeholder="Kickoff, alinhamento de escopo..."
+                        rows={2}
+                        error={!!errors.phases?.[index]?.description}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Botões de controle */}
+                  <div className="flex flex-col gap-1">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removePhase(index)}
+                      onClick={() => movePhaseUp(index)}
+                      disabled={index === 0}
+                      className={index === 0 ? 'opacity-30 cursor-not-allowed' : ''}
+                      title="Mover para cima"
                     >
-                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <ChevronUp className="w-4 h-4" />
                     </Button>
-                  )}
-                </div>
-
-                <div>
-                  <Label required>Nome da Fase</Label>
-                  <Input
-                    {...register(`phases.${index}.name`, {
-                      required: 'Nome é obrigatório',
-                    })}
-                    placeholder="Planejamento"
-                    error={!!errors.phases?.[index]?.name}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label required>Duração</Label>
-                    <Input
-                      type="number"
-                      {...register(`phases.${index}.duration`, {
-                        required: 'Duração é obrigatória',
-                        min: 1,
-                      })}
-                      placeholder="1"
-                      error={!!errors.phases?.[index]?.duration}
-                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => movePhaseDown(index)}
+                      disabled={index === phaseFields.length - 1}
+                      className={index === phaseFields.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}
+                      title="Mover para baixo"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                    {phaseFields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePhase(index)}
+                        className="mt-2"
+                        title="Remover fase"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    )}
                   </div>
-
-                  <div>
-                    <Label required>Unidade</Label>
-                    <Select {...register(`phases.${index}.durationUnit`)}>
-                      <option value="week">Semana(s)</option>
-                      <option value="month">Mês(es)</option>
-                    </Select>
-                  </div>
-                </div>
-
-                <div>
-                  <Label required>Descrição</Label>
-                  <Textarea
-                    {...register(`phases.${index}.description`, {
-                      required: 'Descrição é obrigatória',
-                    })}
-                    placeholder="Kickoff, alinhamento de escopo..."
-                    rows={2}
-                    error={!!errors.phases?.[index]?.description}
-                  />
                 </div>
               </CardContent>
             </Card>
@@ -703,46 +780,76 @@ export function Step6Timeline() {
           {stepFields.map((field, index) => (
             <Card key={field.id} className="border-l-4 border-l-green-500">
               <CardContent className="pt-4 space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
-                      {index + 1}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
+                        {index + 1}
+                      </div>
+                      <h4 className="text-md font-semibold">Passo #{index + 1}</h4>
                     </div>
-                    <h4 className="text-md font-semibold">Passo #{index + 1}</h4>
+
+                    <div>
+                      <Label required>Título</Label>
+                      <Input
+                        {...register(`nextSteps.${index}.title`, {
+                          required: 'Título é obrigatório',
+                        })}
+                        placeholder="Escolher a Opção Desejada"
+                        error={!!errors.nextSteps?.[index]?.title}
+                      />
+                    </div>
+
+                    <div>
+                      <Label required>Descrição</Label>
+                      <Textarea
+                        {...register(`nextSteps.${index}.description`, {
+                          required: 'Descrição é obrigatória',
+                        })}
+                        placeholder="Selecione entre MVP, Smart ou Premium..."
+                        rows={2}
+                        error={!!errors.nextSteps?.[index]?.description}
+                      />
+                    </div>
                   </div>
-                  {stepFields.length > 1 && (
+
+                  {/* Botões de controle */}
+                  <div className="flex flex-col gap-1">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeStep(index)}
+                      onClick={() => moveStepUp(index)}
+                      disabled={index === 0}
+                      className={index === 0 ? 'opacity-30 cursor-not-allowed' : ''}
+                      title="Mover para cima"
                     >
-                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <ChevronUp className="w-4 h-4" />
                     </Button>
-                  )}
-                </div>
-
-                <div>
-                  <Label required>Título</Label>
-                  <Input
-                    {...register(`nextSteps.${index}.title`, {
-                      required: 'Título é obrigatório',
-                    })}
-                    placeholder="Escolher a Opção Desejada"
-                    error={!!errors.nextSteps?.[index]?.title}
-                  />
-                </div>
-
-                <div>
-                  <Label required>Descrição</Label>
-                  <Textarea
-                    {...register(`nextSteps.${index}.description`, {
-                      required: 'Descrição é obrigatória',
-                    })}
-                    placeholder="Selecione entre MVP, Smart ou Premium..."
-                    rows={2}
-                    error={!!errors.nextSteps?.[index]?.description}
-                  />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => moveStepDown(index)}
+                      disabled={index === stepFields.length - 1}
+                      className={index === stepFields.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}
+                      title="Mover para baixo"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                    {stepFields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeStep(index)}
+                        className="mt-2"
+                        title="Remover passo"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
