@@ -18,8 +18,14 @@ interface StepIndicatorProps {
 export function StepIndicator({ currentStep, onStepClick }: StepIndicatorProps) {
   const progress = (currentStep / STEPS.length) * 100;
 
+  const handleStepClick = (stepNumber: number) => {
+    if (onStepClick) {
+      onStepClick(stepNumber);
+    }
+  };
+
   return (
-    <div className="w-full bg-white border-b border-slate-200 py-6">
+    <div className="w-full bg-white border-b border-slate-200 py-6 sticky top-16 z-20 shadow-sm">
       <div className="max-w-4xl mx-auto px-4">
         {/* Progress bar */}
         <div className="mb-8">
@@ -44,32 +50,34 @@ export function StepIndicator({ currentStep, onStepClick }: StepIndicatorProps) 
           {STEPS.map((step, index) => {
             const isCompleted = currentStep > step.number;
             const isCurrent = currentStep === step.number;
-            const isClickable = onStepClick && (isCompleted || isCurrent);
+            const isClickable = onStepClick; // Sempre clicável quando há handler
 
             return (
               <button
                 key={step.number}
-                onClick={() => isClickable && onStepClick(step.number)}
+                onClick={() => isClickable && handleStepClick(step.number)}
                 disabled={!isClickable}
+                type="button"
                 className={cn(
-                  'flex flex-col items-center gap-2 flex-1',
-                  isClickable && 'cursor-pointer hover:opacity-80',
+                  'flex flex-col items-center gap-2 flex-1 transition-all duration-200',
+                  isClickable && 'cursor-pointer hover:opacity-80 active:scale-95',
                   !isClickable && 'cursor-not-allowed opacity-50'
                 )}
               >
                 <div
                   className={cn(
-                    'w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-colors',
+                    'w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-200',
                     isCompleted && 'bg-green-500 text-white',
-                    isCurrent && 'bg-slate-900 text-white',
-                    !isCompleted && !isCurrent && 'bg-slate-200 text-slate-600'
+                    isCurrent && 'bg-slate-900 text-white ring-4 ring-slate-900 ring-opacity-20',
+                    !isCompleted && !isCurrent && 'bg-slate-200 text-slate-600',
+                    isClickable && !isCurrent && 'hover:ring-4 hover:ring-slate-300'
                   )}
                 >
                   {isCompleted ? <Check className="w-5 h-5" /> : step.number}
                 </div>
                 <span
                   className={cn(
-                    'text-xs font-medium hidden sm:block',
+                    'text-xs font-medium hidden sm:block transition-colors duration-200',
                     isCurrent && 'text-slate-900',
                     !isCurrent && 'text-slate-500'
                   )}

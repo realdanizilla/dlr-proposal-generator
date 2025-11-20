@@ -122,6 +122,12 @@ export interface ProposalData {
     services: InfrastructureService[];
     clientNote?: string;
   };
+  support?: {
+    enabled: boolean;
+    introduction?: string;
+    tiers: SupportTier[];
+    recommendationBox?: SupportRecommendationBox;
+  };
   timeline: {
     phases: Phase[];
     nextSteps: NextStep[];
@@ -197,4 +203,40 @@ export interface ProposalTimeline {
     training?: boolean;
     whyUs?: boolean;
   };
+}
+
+export interface SupportTier {
+  enabled: boolean;
+  name: string;
+  value: number;
+  description: string;
+  features: string[];
+  isRecommended: boolean;
+  responseTime: string;
+  availability: string;
+}
+
+export interface SupportRecommendationBox {
+  enabled: boolean;
+  recommendedTier: string;
+  text: string;
+  color: 'green' | 'blue' | 'purple';
+}
+
+export interface SupportTier {
+  enabled: boolean;
+  name: string;
+  value: number;
+  description: string;
+  features: string[];
+  isRecommended: boolean;
+  responseTime: string;
+  availability: string;
+}
+
+export interface SupportRecommendationBox {
+  enabled: boolean;
+  recommendedTier: string;
+  text: string;
+  color: 'green' | 'blue' | 'purple';
 }

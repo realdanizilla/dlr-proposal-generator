@@ -828,71 +828,102 @@ export function PreviewPage() {
               </>
             )}
 
-            {/* Suporte e Melhorias */}
-            {data.timeline?.sections?.support && (
+            {/* Planos de Suporte */}
+            {data.support?.enabled && data.support.tiers && data.support.tiers.filter(t => t.enabled).length > 0 && (
               <>
                 <section className="pdf-page-break pdf-section">
                   <div className="pdf-section-header">
                     <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                      O que está Incluído no Suporte e Melhorias
+                      Planos de Suporte e Manutenção
                     </h2>
-                    <p className="text-slate-600 text-base">Detalhamento do suporte</p>
+                    <p className="text-slate-600 text-base">Opções de suporte contínuo para seu projeto</p>
                     <div className="w-16 h-1 bg-blue-600 mt-3"></div>
                   </div>
 
-                  <p className="pdf-text text-slate-700">
-                    O suporte tem duração de 6 meses após a implantação, sendo 3 meses para estabilização e 3 meses para melhorias. Abaixo o detalhamento do que está incluído no período de melhorias:
-                  </p>
+                  {data.support.introduction && (
+                    <p className="pdf-text text-slate-700">
+                      {data.support.introduction}
+                    </p>
+                  )}
 
-                  <div className="pdf-grid-2">
-                    <div className="pdf-card bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
-                      <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
-                        <Zap className="w-6 h-6 text-white" />
-                      </div>
-                      <h3 className="font-semibold text-slate-900 text-base mb-2">
-                        Pequenas Alterações
-                      </h3>
-                      <p className="text-slate-700 text-sm leading-relaxed">
-                        Até 2 mini features por mês (total de 6), incluindo ajustes de textos e prompts, troca de imagens pré-aprovadas, correção de links quebrados e pequenas correções.
-                      </p>
-                    </div>
+                  <div className="pdf-grid-3">
+                    {data.support.tiers
+                      .filter(t => t.enabled)
+                      .map((tier, index) => (
+                        <div 
+                          key={index}
+                          className={`pdf-card rounded-lg p-5 flex flex-col ${
+                            tier.isRecommended 
+                              ? 'bg-green-50 border-2 border-green-500' 
+                              : 'bg-white border-2 border-slate-200'
+                          }`}
+                          style={{ minHeight: '420px' }}
+                        >
+                          {/* Cabeçalho */}
+                          <div className="mb-3">
+                            <h3 className="text-lg font-bold text-slate-900 mb-1 leading-tight">
+                              {tier.name} {tier.isRecommended && '⭐'}
+                            </h3>
+                          </div>
 
-                    <div className="pdf-card bg-purple-50 border-2 border-purple-200 rounded-lg p-5">
-                      <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-3">
+                          {/* Descrição com bullets */}
+                          <div className="mb-4 flex-grow">
+                            {tier.description && (
+                              <div 
+                                className="text-xs text-slate-600 prose prose-sm max-w-none [&_ul]:list-disc [&_ul]:list-inside [&_ul]:pl-0 [&_ol]:list-decimal [&_ol]:list-inside [&_ol]:pl-0 [&_li]:mb-1 [&_li]:leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: tier.description }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Preço */}
+                          <div className="mb-4">
+                            <p className="text-3xl font-bold text-slate-900 leading-none">
+                              {formatCurrency(tier.value)}
+                              <span className="text-base font-normal text-slate-600">/mês</span>
+                            </p>
+                          </div>
+                            
+                          {/* Métricas - sempre no final */}
+                          <div className="pt-3 border-t border-slate-200 space-y-2 mt-auto">
+                            {tier.responseTime && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-600 text-xs flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Resposta:
+                                </span>
+                                <span className="font-semibold text-xs">{tier.responseTime}</span>
+                              </div>
+                            )}
+                            {tier.availability && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-600 text-xs flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  Disponibilidade:
+                                </span>
+                                <span className="font-semibold text-xs">{tier.availability}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {data.support.recommendationBox?.enabled && (
+                    <div className="pdf-card bg-green-50 border-2 border-green-200 rounded-lg p-5 flex items-start gap-4 mt-6">
+                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
                         <Award className="w-6 h-6 text-white" />
                       </div>
-                      <h3 className="font-semibold text-slate-900 text-base mb-2">
-                        Melhorias e Features
-                      </h3>
-                      <p className="text-slate-700 text-sm leading-relaxed">
-                        Até 1 melhoria (feature) por mês (total de 3), desde que não seja muito complexa. Evoluções incrementais para otimizar o sistema.
-                      </p>
-                    </div>
-
-                    <div className="pdf-card bg-green-50 border-2 border-green-200 rounded-lg p-5">
-                      <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-3">
-                        <TrendingUp className="w-6 h-6 text-white" />
+                      <div>
+                        <h4 className="font-semibold text-slate-900 text-base mb-2">
+                          💡 Recomendação DLR:
+                        </h4>
+                        <p className="text-slate-700 text-sm leading-relaxed">
+                          {data.support.recommendationBox.text}
+                        </p>
                       </div>
-                      <h3 className="font-semibold text-slate-900 text-base mb-2">
-                        Monitoramento Básico
-                      </h3>
-                      <p className="text-slate-700 text-sm leading-relaxed">
-                        Acompanhamento das automações para garantir que tudo está operando conforme esperado.
-                      </p>
                     </div>
-
-                    <div className="pdf-card bg-orange-50 border-2 border-orange-200 rounded-lg p-5">
-                      <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-3">
-                        <Clock className="w-6 h-6 text-white" />
-                      </div>
-                      <h3 className="font-semibold text-slate-900 text-base mb-2">
-                        Suporte Técnico
-                      </h3>
-                      <p className="text-slate-700 text-sm leading-relaxed">
-                        Atendimento para erros, comportamento anormal e paradas de sistema durante horário comercial (9h às 18h, dias úteis).
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </section>
               </>
             )}
