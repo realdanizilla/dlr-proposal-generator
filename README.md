@@ -396,8 +396,8 @@ vercel --prod
 
 **DLR AI Consultoria**
 - 📧 Email: danizilla@gmail.com
-- 🌐 Website: [dlr.ai](https://dlr.ai)
-- 💼 LinkedIn: [Daniel Lopes Rosa](https://linkedin.com/in/daniellopesrosa)
+- 🌐 Website: [dlr.ai](https://dlrassessoria.com.br)
+- 💼 LinkedIn: [Daniel Ribeiro](https://www.linkedin.com/in/daniel-ribeiro-pmp-a018a413)
 
 ---
 
