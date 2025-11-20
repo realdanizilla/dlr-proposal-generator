@@ -25,6 +25,8 @@ export function PreviewPage() {
           .single();
 
         if (error) throw error;
+        console.log('=== CARREGANDO PREVIEW ===');
+        console.log('Serviços carregados:', data.data.infrastructure?.services?.map((s, i) => ({ index: i, name: s.name })));
         setProposal(data);
       } catch (error) {
         console.error('Erro ao carregar proposta:', error);
@@ -673,7 +675,9 @@ export function PreviewPage() {
 
                   {/* Grid de Serviços */}
                   <div className="space-y-4">
-                    {data.infrastructure.services.map((service, index) => (
+                    {data.infrastructure.services
+                    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999)) // Ordena por order
+                    .map((service, index) => (
                       <div 
                         key={index}
                         className="pdf-card bg-white border-2 border-slate-200 rounded-lg overflow-hidden"

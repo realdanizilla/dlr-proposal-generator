@@ -69,6 +69,7 @@ export interface InfrastructureService {
     monthlyCost: number;
   };
   description?: string;
+  order?: number; // NOVO - para garantir a ordem
 }
 
 export interface Phase {

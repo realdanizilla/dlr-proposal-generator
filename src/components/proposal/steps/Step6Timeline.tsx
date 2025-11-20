@@ -366,6 +366,12 @@ export function Step6Timeline() {
         },
       };
 
+          console.log('=== DADOS ANTES DE SALVAR ===');
+    console.log('Serviços de infraestrutura:', formData.infrastructure?.services?.map((s, i) => ({
+      index: i,
+      name: s.name
+    })));
+
       // Salvar no banco
       await saveProposal(completeData, formData.basic?.proposalId);
 

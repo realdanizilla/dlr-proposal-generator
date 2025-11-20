@@ -77,12 +77,26 @@ export function Step5Infrastructure() {
   const moveServiceUp = (index: number) => {
     if (index > 0) {
       moveService(index, index - 1);
+      // Forçar atualização da ordem
+      setTimeout(() => {
+        const services = watch('services');
+        services.forEach((service, idx) => {
+          setValue(`services.${idx}.order`, idx);
+        });
+      }, 0);
     }
   };
 
   const moveServiceDown = (index: number) => {
     if (index < serviceFields.length - 1) {
       moveService(index, index + 1);
+      // Forçar atualização da ordem
+      setTimeout(() => {
+        const services = watch('services');
+        services.forEach((service, idx) => {
+          setValue(`services.${idx}.order`, idx);
+        });
+      }, 0);
     }
   };
 
@@ -182,6 +196,8 @@ export function Step5Infrastructure() {
   };
 
   const onSubmit = (data: Step5FormData) => {
+    console.log('=== SALVANDO INFRAESTRUTURA ===');
+    console.log('Ordem dos serviços:', data.services.map((s, i) => ({ index: i, name: s.name })));
     updateFormData('infrastructure', {
       enabled: data.enabled,
       introduction: data.introduction,
